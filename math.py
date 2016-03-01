@@ -43,4 +43,5 @@ def correct(x):
 if __name__ == "__main__":
 	
 	print cosD(90.)
+	print cosD(60.)
 
