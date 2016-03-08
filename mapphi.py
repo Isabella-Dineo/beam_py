@@ -2,7 +2,9 @@
 
 # Code to map the rotational phase a pulsar, given the geometry of the pulsar. 
 # Input angles are the inclination angle, the impact parameter, and the
-# polarisation position angle phi. The function takes input angle in degrees and return an angle R in radians. The conve  
+# polarisation position angle phi. The function takes input angle in degrees and
+# return an angle R in radians, which in turn used to calculate the x and y 
+# coordinates of the plane of rotation 
 
 import numpy as np
 import trig_err
