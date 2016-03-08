@@ -18,7 +18,7 @@ def mapphi(alpha,beta,phi):
         phi: The polarisation position angle.
 
     Return:
-          The coordinates of the plane of rotation.
+          The coordinates of the plane of rotation xp and yp
     """
     cosR = trig_err.cosD(alpha+beta)*trig_err.cosD(alpha) + \
            trig_err.sinD(alpha+beta)*trig_err.sinD(alpha) * trig_err.cosD(phi)
