@@ -12,21 +12,21 @@ import trig_err
 def mapphi(alpha,beta,phi):
     """Maps the rotational phase (pulse longitude) phi.
      
-    Args: 
-        alpha: The inclination angle of the magnetic axis from the rotational axis. 
-        beta: The impact parameter (the closest approach of the magnetic axis to the LOS.)
-        phi: The polarisation position angle.
+       Args: 
+         alpha: The inclination angle of the magnetic axis from the rotational axis. 
+         beta: The impact parameter (the closest approach of the magnetic axis to the LOS.)
+         phi: The polarisation position angle.
 
-    Return:
-          The coordinates of the plane of rotation xp and yp
+       Return:
+         The coordinates of the plane of rotation xp and yp
     """
-    cosR = trig_err.cosD(alpha+beta)*trig_err.cosD(alpha) + \
-           trig_err.sinD(alpha+beta)*trig_err.sinD(alpha) * trig_err.cosD(phi)
+    cosR = trig_err.cosD(alpha+beta) * trig_err.cosD(alpha) + \
+           trig_err.sinD(alpha+beta) * trig_err.sinD(alpha) * trig_err.cosD(phi)
 
     cosR_corr = trig_err.correct(cosR)
     R = trig_err.acosD(cosR_corr)
 
-# problems with precision for 180 degrees
+    # problems with precision for 180 degrees
     
     if int(R*100.0) == 180.0:
         R = int(R*100.0)/100.0
