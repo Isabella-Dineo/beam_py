@@ -9,22 +9,22 @@ def rvm(alpha,beta,phi0,psi0,psi,xprof):
     
        Args: 
     
-          alpha: the magnetic inclination angle in degrees.
-          beta: the impact parameter in degrees.
-          phi0: the rotational phase at the fiducial point in degrees.
-          psi0: the position angle at the fiducial point in degrees.
-          xprof: an array of the baseline points of the profile.  
+          alpha   : the magnetic inclination angle in degrees.
+          beta    : the impact parameter in degrees.
+          phi0    : the rotational phase at the fiducial point in degrees.
+          psi0    : the position angle at the fiducial point in degrees.
+          xprof   : an array of the baseline points of the profile.  
         
        Outputs:
          
-           allpsi: an array of polarisation position angles swing in degrees.
+           allpsi : an array of polarisation position angles swing in degrees.
            
     """
 
     # Converting the input angles to radians:
     angles = alpha, beta, phi0, psi0
     for angle in angles:
-         angRad = np.deg2rad(angles)
+        angRad = np.deg2rad(angles)
             
     # Predict the position angle (psi) swing through the observer's sight line:
     zeta = alpha + beta
@@ -54,5 +54,5 @@ def rvm(alpha,beta,phi0,psi0,psi,xprof):
 
 # simple test line
 if __name__ == "__main__":
-    xprof = np.linspace(180.,180.,10)
+    xprof = np.linspace(-180.,180.,10)
     print rvm(45.,15.,10.,15.,10.,xprof)

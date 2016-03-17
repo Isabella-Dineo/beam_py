@@ -13,9 +13,9 @@ def mapphi(alpha,beta,phi):
     """Maps the rotational phase (pulse longitude) phi.
      
        Args: 
-         alpha: The inclination angle of the magnetic axis from the rotational axis. 
-         beta: The impact parameter (the closest approach of the magnetic axis to the LOS.)
-         phi: The polarisation position angle.
+         alpha   : inclination angle of the magnetic axis from the rotational axis. 
+         beta    : impact parameter (the closest approach of the magnetic axis to the LOS.)
+         phi     : polarisation position angle.
 
        Return:
          The coordinates of the plane of rotation xp and yp
