@@ -32,7 +32,7 @@ def rvm(alpha,beta,phi0,psi0,psi,xprof):
     points = range(1,numpts + 1)
     
     allpsi = []
-    print "test"
+
     for point in points:
         phi = np.deg2rad(xprof[point - 1])
         numer = np.sin(alpha) * np.sin(phi - phi0)
