@@ -7,7 +7,7 @@
 # coordinates of the plane of rotation 
 
 import numpy as np
-import trig_err
+import d2r
 
 def mapphi(alpha,beta,phi):
     """Maps the rotational phase (pulse longitude) phi.
@@ -20,11 +20,11 @@ def mapphi(alpha,beta,phi):
        Return:
          The coordinates of the plane of rotation xp and yp
     """
-    cosR = trig_err.cosD(alpha+beta) * trig_err.cosD(alpha) + \
-           trig_err.sinD(alpha+beta) * trig_err.sinD(alpha) * trig_err.cosD(phi)
+    cosR = d2r.cosD(alpha+beta) * d2r.cosD(alpha) + \
+           d2r.sinD(alpha+beta) * d2r.sinD(alpha) * d2r.cosD(phi)
 
-    cosR_corr = trig_err.correct(cosR)
-    R = trig_err.acosD(cosR_corr)
+    cosR_corr = d2r.correct(cosR)
+    R = d2r.acosD(cosR_corr)
 
     # problems with precision for 180 degrees
     
@@ -32,14 +32,14 @@ def mapphi(alpha,beta,phi):
         R = int(R*100.0)/100.0
     
     if R!=0.0 and R != 180.0 and alpha > 0.0:
-        cosgamma = (trig_err.cosD(alpha+beta) - trig_err.cosD(alpha) * cosR) \
-                  /(trig_err.sinD(alpha) * trig_err.sinD(R))
+        cosgamma = (d2r.cosD(alpha+beta) - d2r.cosD(alpha) * cosR) \
+                  /(d2r.sinD(alpha) * d2r.sinD(R))
     else:
          cosgamma = 0.0
 
-    cosgamma_corr = trig_err.correct(cosgamma)
-    gamma = trig_err.acosD(cosgamma_corr)
-    xp = R * trig_err.sinD(gamma)
+    cosgamma_corr = d2r.correct(cosgamma)
+    gamma = d2r.acosD(cosgamma_corr)
+    xp = R * d2r.sinD(gamma)
     
     if phi > 0.0:
         xp = -xp
