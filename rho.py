@@ -21,7 +21,7 @@ def rho(P, hmin, hmax):
 
     """
 
-    H = emission_height(P, hmin, hmax)
+    H = emission_height.emission_height(P, hmin, hmax)
     rho = np.degrees(np.sqrt((9 * np.pi * H) / (2 * constants.c * P)))
     
     return rho

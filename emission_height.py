@@ -31,7 +31,6 @@ def emission_height(P, hmin, hmax):
     if P > 0.15:
         if hmin >= 20 and hmax <= 1000:
             H = np.random.uniform(hmin, hmax, size=num_H)
-            print "width for old pulsar emission regions"
         
         else: print "error, emission range not allowed for pulse period P > 0.15 seconds"
         

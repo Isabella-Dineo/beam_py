@@ -19,7 +19,7 @@ def patch_width(P, hmin, hmax):
 
     """   
     
-    H = emission_height(P, hmin, hmax)
+    H = emission_height.emission_height(P, hmin, hmax)
     wp = 2.45 * 0.2 * np.sqrt(H / ( 10 * P)) 
     
     return wp
@@ -30,3 +30,4 @@ if __name__ == "__main__":
     hmax = 975
     P = 0.015
     wp = patch_width(P, hmin, hmax)
+    print wp
