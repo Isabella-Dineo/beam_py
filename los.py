@@ -24,3 +24,10 @@ def los(alpha, beta):
     
     
     return xp, yp, thetalos
+
+##################### simple test #########################
+if __name__ == "__main__":
+    alpha = 60
+    beta = 0.5
+    xp, yp, thetalos = los(alpha, beta)
+    print xp, yp, thetalos
