@@ -23,8 +23,4 @@ def rho(P, hmin, hmax):
     
     return rho
 
-############ simple test #########################################
-if __name__ == "__main__":
-    H = np.linspace(950,1000, num=10, endpoint=True)
-    P = 0.15
-    rhos = rho(P, H)
+
