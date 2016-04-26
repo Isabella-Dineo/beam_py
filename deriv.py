@@ -37,4 +37,5 @@ if __name__ == "__main__":
     #inar = np.random.random(100)
     inar = np.arange(100)
     outar = deriv(inar)
-    print np.allclose(outar, 1.)
+    print outar
+#print np.allclose(outar, 1.)

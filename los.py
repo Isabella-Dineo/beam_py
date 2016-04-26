@@ -20,14 +20,17 @@ def los(alpha, beta):
     
     phi = np.arange(-180,180)
     xp, yp = mp.mapphi(alpha, beta, phi)
-    thetalos = np.arctan2(xp, yp) * (180 / np.pi) - 90.0
+    thetalos = np.arctan2(yp, xp) * (180 / np.pi) - 90.0
     
+    for i in np.arange(len(thetalos)):
+        if thetalos[i] < 0:
+            thetalos[i] = -thetalos[i]
     
     return xp, yp, thetalos
 
 ##################### simple test #########################
 if __name__ == "__main__":
-    alpha = 60
-    beta = 0.5
+    alpha = 90
+    beta = 10
     xp, yp, thetalos = los(alpha, beta)
-    print xp, yp, thetalos
+    print thetalos
