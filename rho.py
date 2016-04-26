@@ -22,7 +22,7 @@ def rho(P, hmin, hmax):
     """
 
     H = emission_height.emission_height(P, hmin, hmax)
-    rho = np.degrees(np.sqrt((9 * np.pi * H * 10**4) / (2 * constants.c * P)))
+    rho = np.degrees(np.sqrt((9 * np.pi * H * 10**3) / (2 * constants.c * P)))
     
     return rho
 
@@ -30,6 +30,6 @@ def rho(P, hmin, hmax):
 if __name__ == "__main__":
     hmin = 955
     hmax = 975
-    P = 0.015
+    P = 1.
     opa = rho(P, hmin, hmax)
     print opa

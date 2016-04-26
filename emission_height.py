@@ -21,7 +21,7 @@ def emission_height(P, hmin, hmax):
 #   np.random.seed(0)  # makes the random numbers predictable; the same numbers appear every time.   
 
 #   Height for a short period pulsar:
-    if P < 0.15:
+    if P <= 0.15:
         if hmin >= 950 and hmax <= 1000:
             H = np.random.uniform(hmin, hmax) # only one emission height 
            
@@ -40,6 +40,6 @@ def emission_height(P, hmin, hmax):
 if __name__ == "__main__":
     hmin = 955
     hmax = 975
-    P = 0.015
+    P = 0.15
     H = emission_height(P, hmin, hmax)
     print H    
