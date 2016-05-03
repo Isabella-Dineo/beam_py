@@ -5,6 +5,7 @@ import patch_width
 import los
 import patch_center
 
+
 def plotpatch(P, alpha, beta, hmin, hmax, npatch):
     """Function to plot the patches for a given height range. Using a 2d gaussian
     

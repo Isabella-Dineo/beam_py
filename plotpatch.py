@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import d2r
 import patch_width
 
+
 def plotpatch(P, hmin, hmax, npatch):
     """Function to plot the patches for a given height range.
     

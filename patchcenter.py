@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import rho
 
+
 def patch_center(P, hmin, hmax, npatch):
     """Function find centres of the patches
        
