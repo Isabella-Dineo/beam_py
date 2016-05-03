@@ -1,4 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
 import d2r
+import patch_width
+import los
+import patch_center
+
 def plotpatch(P, alpha, beta, hmin, hmax, npatch):
     """Function to plot the patches for a given height range. Using a 2d gaussian
     
@@ -19,7 +25,7 @@ def plotpatch(P, alpha, beta, hmin, hmax, npatch):
     
     X = np.linspace(-180, 180, num=50, endpoint=True)
     Y = np.linspace(-180, 180, num=50, endpoint=True)
-    patchwidths = patch_width(P, hmin, hmax)
+    patchwidths = patch_width.patch_width(P, hmin, hmax)
     
 #   choose random patch widths (wp) depending on number of patches specified:
     np.random.shuffle(patchwidths)
@@ -27,12 +33,12 @@ def plotpatch(P, alpha, beta, hmin, hmax, npatch):
 
 #   wp == the spread (sigma)
 #   project the sigmax and sigmay to the line of sight plane:
-    xlos, ylos, thetalos = los(alpha, beta)
+    xlos, ylos, thetalos = los.los(alpha, beta)
     sigmax = wp * d2r.sinD(thetalos)
     sigmay = wp * d2r.cosD(thetalos)
     
 #   patchcenter or mean of the plot from patch center:
-    cx, cy = patch_center(P, hmin, hmax, npatch)
+    cx, cy = patch_center.patch_center(P, hmin, hmax, npatch)
     
 #   2d gaussian function
 #    for i in np.arange(len(cx)):

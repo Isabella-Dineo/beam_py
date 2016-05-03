@@ -1,3 +1,8 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import d2r
+import patch_width
+
 def plotpatch(P, hmin, hmax, npatch):
     """Function to plot the patches for a given height range.
     
@@ -15,7 +20,7 @@ def plotpatch(P, hmin, hmax, npatch):
     """
     
     angle = np.linspace(-180, 180, num=50, endpoint=True)
-    patchwidths = patch_width(P, hmin, hmax)
+    patchwidths = patch_width.patch_width(P, hmin, hmax)
     
 #   choose random patch widths (wp) depending on how patches specify:
     np.random.shuffle(patchwidths)

@@ -1,3 +1,6 @@
+import numpy as np
+import mapphi as mp
+
 def los(alpha, beta):
     """Function to determine the line of sight cut across the beam.
     
