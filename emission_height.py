@@ -36,6 +36,7 @@ def emission_height(P, hmin, hmax, npatch):
         
     return H
 
+
 ########################### simple test #############################
 if __name__ == "__main__":
     P = 0.16

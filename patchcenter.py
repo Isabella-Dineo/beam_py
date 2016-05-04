@@ -42,6 +42,7 @@ def patch_center(P, hmin, hmax, npatch):
         
     return patch_centerx, patch_centery
 
+
 ########################### simple test ###########################
 if __name__ == "__main__":
     P = 0.16

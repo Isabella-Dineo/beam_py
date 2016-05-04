@@ -24,6 +24,7 @@ def patch_width(P, hmin, hmax, npatch):
     patchwidths = 2.45 * 0.2 * np.sqrt(H / ( 10 * P)) 
     
     return patchwidths
+
 #################### simple test #################################
 if __name__ == "__main__":
     P = 0.16
