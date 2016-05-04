@@ -32,7 +32,7 @@ def plotpatch(P, alpha, beta, hmin, hmax, npatch):
     cx, cy = patchcenter.patch_center(P, hmin, hmax, npatch)
 
 #   choose random patch widths (wp) depending on how patches specify:
-    patchwidths = patchwidth.patch_width(P, hmin, hmax)
+    patchwidths = patchwidth.patch_width(P, hmin, hmax, npatch)
     #np.random.shuffle(patchwidths)
     if npatch > 1:
         np.random.shuffle(patchwidths)

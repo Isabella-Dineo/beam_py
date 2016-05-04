@@ -24,7 +24,7 @@ def patch_center(P, hmin, hmax, npatch):
     patch_center = 2 * np.pi * np.random.random()
     patch_centerx = np.zeros(npatch)
     patch_centery = np.zeros(npatch)
-    opa = rho.rho(P, hmin, hmax)  # opening angle of the beam (rho is degrees)
+    opa = rho.rho(P, hmin, hmax, npatch)  # opening angle of the beam (rho is degrees)
 
 #   for short periods 
     if P <= 0.15:
