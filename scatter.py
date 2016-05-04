@@ -64,7 +64,7 @@ def scatter(prof,dm,period,freq):
                
                 if tb + i - 1 > npts:
                     frac = (tb + i - 1 - npts) * tbin / tau
-                    scr = np.exp(-1.*frac)
+                    scr = np.exp(-frac)
                 else: 
                     scr = 0.
 
