@@ -6,8 +6,8 @@ def los(alpha, beta):
     
        Args:
        -----
-       alpha       : inclination angle
-       beta        : impact parameter
+       alpha       : inclination angle (degrees)
+       beta        : impact parameter (degrees)
        
        Returns:
        --------
@@ -27,3 +27,10 @@ def los(alpha, beta):
     avgthetalos = np.average(thetalos)
     
     return xlos, ylos, avgthetalos
+
+######################## simple test ######################
+if __name__ == "__main__":
+    alpha = 60
+    beta = 10
+    xlos, ylos, avgthetalos = los(alpha, beta)
+    print avgthetalos

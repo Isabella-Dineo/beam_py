@@ -26,8 +26,9 @@ def patch_width(P, hmin, hmax):
 
 #################### simple test #########################
 if __name__ == "__main__":
-    hmin = 955
-    hmax = 975
-    P = 0.015
+    P = 0.16
+    hmin = 50
+    hmax = 950
+    npatch = 3
     wp = patch_width(P, hmin, hmax)
     print wp

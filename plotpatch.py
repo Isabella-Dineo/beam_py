@@ -83,10 +83,10 @@ def plotpatch(P, alpha, beta, hmin, hmax, npatch):
     
 ############################ simple test ##########################
 if __name__ == "__main__":
-    P = 0.13
+    P = 0.16
     alpha = 60
-    beta = 10
-    hmin = 950
-    hmax = 1000
-    npatch = 1
+    beta = 0.5
+    hmin = 50
+    hmax = 950
+    npatch = 3
     plotpatch(P, alpha, beta, hmin, hmax, npatch)

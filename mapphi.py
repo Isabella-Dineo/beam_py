@@ -11,7 +11,7 @@ import d2r
 
 def mapphi(alpha,beta,phi):
     """
-    Maps the rotational phase (pulse longitude) phi.
+    Maps the rotational phase phi.
      
     Args:
     -----
@@ -56,10 +56,12 @@ def mapphi(alpha,beta,phi):
 
     return yp, xp
 
-###########################################################################################
+########################### simple test ###########################################
 
-# simple test statement
 
 if __name__ == "__main__":
    phi = np.arange(-180,180)
-   print mapphi(90,10,phi)
+   alpha = 60
+   beta = 10
+   xp, yp = mapphi(alpha, beta, phi)
+   print xp, yp
