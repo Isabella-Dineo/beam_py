@@ -11,7 +11,7 @@ import d2r
 
 def mapphi(alpha,beta,phi):
     """
-    Maps the rotational phase phi.
+    Function to map the rotational phase phi on t.
      
     Args:
     -----
@@ -36,8 +36,8 @@ def mapphi(alpha,beta,phi):
     # problems with precision for 180 degrees
     cosgamma = np.zeros(len(R))
     for i in np.arange(len(R)):
-        if int(R[i]*100.0) == 180.0:
-            R[i] = int(R*100.0)/100.0
+        if int(R[i]*100.0) == 1800.0:
+            R[i] = int(R[i]*100.0)/100.0
     
         if R[i] != 0.0 and R[i] != 180.0 and alpha > 0.0:
             cosgamma[i] = (d2r.cosD(alpha+beta) - d2r.cosD(alpha) * cosR[i]) \
@@ -62,6 +62,6 @@ def mapphi(alpha,beta,phi):
 if __name__ == "__main__":
    phi = np.arange(-180,180)
    alpha = 60
-   beta = 10
+   beta = 10 
    xp, yp = mapphi(alpha, beta, phi)
    print xp, yp

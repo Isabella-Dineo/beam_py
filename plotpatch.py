@@ -86,6 +86,6 @@ if __name__ == "__main__":
     hmin = 50
     hmax = 950
     npatch = 2
-    alpha = 0.5
-    beta = 0.1
+    alpha = 45
+    beta = 10
     plotpatch(P, alpha, beta, hmin, hmax, npatch)
