@@ -42,7 +42,7 @@ def acosD(ang):
     -----
        ang: angle in degrees.
     """
-    return np.arccos(np.deg2rad(ang))
+    return (180/ np.pi) * np.arcsin(ang)
 
 def asinD(ang):
     """
@@ -52,7 +52,7 @@ def asinD(ang):
     -----
        ang: angle in degrees.
     """
-    return np.arcsin(np.deg2rad(ang))
+    return 180/ np.pi * np.arcsin(ang)
 
 def atanD(ang):
     """
@@ -62,7 +62,7 @@ def atanD(ang):
     -----
        ang: angle in degrees.
     """
-    return np.arctan(np.deg2rad(ang))
+    return (180/ np.pi) * np.arcsin(ang)
 
 #####################################################################
 
