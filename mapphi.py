@@ -8,6 +8,7 @@
 
 import numpy as np
 import d2r
+import matplotlib.pyplot as plt
 
 def mapphi(alpha,beta,phi):
     """
@@ -60,8 +61,10 @@ def mapphi(alpha,beta,phi):
 
 
 if __name__ == "__main__":
-   phi = np.arange(-180,180)
-   alpha = 60
-   beta = 10 
-   xp, yp = mapphi(alpha, beta, phi)
-   print xp, yp
+    phi = np.linspace(-180, 180, num=360, endpoint=True)
+    alpha = 60
+    beta = 10 
+    xp, yp = mapphi(alpha, beta, phi)
+    print xp, yp
+    plt.plot(xp, yp)
+    plt.show()

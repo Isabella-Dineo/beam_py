@@ -5,7 +5,7 @@ import numpy as np
 
 def cosD(ang):
     """
-    Calculate the cosine of the input ang in radians
+    Calculate the cosine of the input ang.
 
     Args:
     -----
@@ -16,7 +16,7 @@ def cosD(ang):
 
 def sinD(ang):
     """
-    Calculate the sine of the input ang in radians
+    Calculate the sine of the input ang.
 
     Args:
     -----
@@ -26,7 +26,7 @@ def sinD(ang):
 
 def tanD(ang):
     """
-    Calculate the tan of the input ang in radians
+    Calculate the tan of the input ang.
 
     Args:
     -----
@@ -36,31 +36,22 @@ def tanD(ang):
 
 def acosD(ang):
     """
-    Calculate the inverse cosine of the input ang in radians
+    Calculate the inverse cosine of the input.
 
-    Args:
-    -----
-       ang: angle in degrees.
     """
     return (180/ np.pi) * np.arccos(ang)
 
 def asinD(ang):
     """
-    Calculate the inverse sine of the input ang in radians
+    Calculate the inverse sine of the input.
 
-    Args:
-    -----
-       ang: angle in degrees.
     """
-    return 180/ np.pi * np.arcsin(ang)
+    return (180/ np.pi) * np.arcsin(ang)
 
 def atanD(ang):
     """
-    Calculate the inverse tan function of the input ang in radians
+    Calculate the inverse tan of the input.
 
-    Args:
-    -----
-       ang: angle in degrees.
     """
     return (180/ np.pi) * np.arctan(ang)
 
