@@ -262,7 +262,7 @@ def patch_center(P, heights, npatch):
     return centerx, centery
 
 #====================================================================================================================================================
-#							    RVM:
+#							    POLARIZATION:
 #====================================================================================================================================================
 def rvm(alpha, beta, prof):
     """Function to determine polarization swing.
@@ -352,6 +352,67 @@ def sc_time(freq, dm):
     return tau
 
 #====================================================================================================================================================
+#                					WRAPPER:
+#====================================================================================================================================================
+def pulsetrain(npulses, numberofbins, prof):
+    """Function to create number of pulses given a single pulse profile.
+
+       Args:
+       -----
+       npulses        : number of pulses
+       numberofbins   : number od bins (res; def = 1e3)
+       prof           : pulse profile
+
+       Return:
+       -------
+       train          : a train of pulse profiles
+    """
+
+    binsrange = np.linspace(1, numberofbins, num=numberofbins, endpoint=True)
+    nbins = np.max(binsrange)
+    train = np.zeros(npulses * int(nbins))
+    for i in range(npulses):
+        startbin = i * nbins
+        train[startbin:startbin + nbins] = prof
+    
+    return train
+
+
+def extractpulse(sc_train, pulsesfromend, binsperpulse):
+    """Function that takes the output convolution
+       
+       Args:
+       -----
+       train        : a train of pulse profiles
+       pulsefromend : number position of pulse to extract
+       binsperpulse : number of bins per pulse
+
+       Returns:
+       --------
+       train[start:end]
+       zerobpulse
+       rectangle
+       flux
+    """
+    
+    if pulsesfromend == 0:
+        start = 0
+        end = binsperpulse
+        #zerobpulse = train[start:int(end)] - np.min(train[start:int(end)])
+        #rectangle = np.min(train[start:int(end)])*binsperpulse
+        #flux = np.sum(train[start:int(end)]) - rectangle
+
+    else:
+        start = -pulsesfromend*binsperpulse
+        end = start + binsperpulse
+        #zerobpulse = train[start:int(end)]-np.min(train[start:int(end)])
+        #rectangle = np.min(train[start:inte(end)])*binsperpulse
+        #flux = np.sum(train[start:int(end)]) - rectangle
+
+    pulse = sc_train[int(start):int(end)]
+
+    return pulse
+#====================================================================================================================================================
 #						     BROADENING FUNCTION:
 #====================================================================================================================================================
 def broadening(tau, P):
@@ -366,7 +427,7 @@ def broadening(tau, P):
        -------
        broad_func : broadening function
     """
-    t = np.linspace(0, 5*P, num=1e3, endpoint=True)
+    t = np.linspace(0, P, num=1e3, endpoint=True)
     broad_func = 1/tau * np.exp(-(t / tau))
 
     return broad_func
@@ -374,24 +435,24 @@ def broadening(tau, P):
 #====================================================================================================================================================
 #						        SCATTERING:
 #====================================================================================================================================================
-def scatter(prof, bf):
+def scatter(train, bf):
     """Function to scatter a pulse profile. Returns a convolution of the profile with the scattering function.
 
        Args:
        -----
-       prof    : profile
+       pulse   : pulse profile (extracted from a function extractpulse())
        bf      : broadening function
 
        Returns:
        -------
        conv    : scattered profile 
     """
-    conv = np.convolve(prof, bf)
+    conv = np.convolve(train, bf)
     # normalise the profile:
-    profint = np.sum(prof) # integral / area of the profile 
+    profint = np.sum(train) # integral / area of the profile 
     convint = np.sum(conv) # integral / area of the scattered profile
     sc_prof = conv * (profint / convint)
-    out = sc_prof[0:1e3] 
+    out = sc_prof[0 : len(train) + 1] 
 
     return out
 #====================================================================================================================================================
@@ -467,12 +528,13 @@ def plotpatch(P, alpha, beta, heights, centerx, centery, snr, do_ab):
     prof = Z[ZxIdx, ZyIdx]
 
 #   Scattering:
-#   1. Find the scattering time in seconds:
     tau = sc_time(freq, dm)
-#   2. Determine the function that prodens the profile:
     bf = broadening(tau, P)
-#   3. scatter the profile:
-    sc_prof = scatter(prof, bf) # scattered profile.
+    train =  pulsetrain(3, 1e3, prof)
+    sc_train = scatter(train, bf)
+    sc_prof = extractpulse(sc_train, 2, 1e3) #scatter plot
+
+# scattered profile.
 
 
 #   Polarized emission:
@@ -484,13 +546,14 @@ def plotpatch(P, alpha, beta, heights, centerx, centery, snr, do_ab):
 #   add noise: (gaussian noise)
     if snr == None:
         prof_i = prof # profile without noise
-        
+
     else:
         sigma_s = sigmax #std dev of the profile
         sigma_n = sigmax/np.sqrt(snr) #std dev of the noise
         mean_n = (sigmax**2) * np.sqrt(snr)     
         noise = np.random.normal(mean_n, sigma_n, 1e3)
         prof_i = prof + noise
+#        prof = sc_prof
         #print sigma_n, mean_n
     
 #   patchy emission region:
@@ -524,7 +587,7 @@ def plotpatch(P, alpha, beta, heights, centerx, centery, snr, do_ab):
 #    plt.show()
     #time.ctime(time.time())
     file_num = time.time()
-    plt.savefig('beam' + str(file_num) + '.pdf', format='pdf')
+    plt.savefig('beam_F_' + str(freq) + '_dm_' + str(dm) + '_' + str(file_num) + '.pdf', format='pdf')
 
 #                                            =============================================
 #                                                      Command Line Parser
@@ -559,7 +622,7 @@ parser.add_argument('--iseed', metavar="<iseed>", type=int, default='4', help='i
 parser.add_argument('--hmin', metavar="<hmin>", type=float, default=None, help='minimum emission height in km (default = {20 km for P > 0.15 s}, and {950 km for P < 0.15 s})')
 parser.add_argument('--hmax', metavar="<hmax>", type=float, default=None, help='maximum emission height in km (default = 1000 km)')
 parser.add_argument('--snr', metavar="<snr>", type=float, default=None, help='maximum emission height in km (default = None)')
-parser.add_argument('-dm', metavar="<dm>", type=float, default=0.0, help='dispersion measure in cm^-3 pc (default = 0.0)')
+parser.add_argument('-dm', metavar="<dm>", type=float, default=0.0001, help='dispersion measure in cm^-3 pc (default = 0.0)')
 #parser.add_argument('-o','--outfile', metavar="<name_suffix>", dest='output', action='store', type=argparse.FileType('w'), help="Write to file.")
 parser.add_argument('--npatch', metavar="<npatch>", type=int, default='10', help='number of emission patches (default=10)' )
 parser.add_argument('--do_ab', default=None, help='include aberration ofset (default = None)')
