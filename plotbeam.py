@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#plotbeam.py , last modified 25/05/2016 [ID]
+#plotbeam.py , last modified 07/06/2016 [ID]
 
 import numpy as np 
 import time
@@ -54,7 +54,7 @@ def mapphi(alpha, beta, phi):
        
        Returns:
        --------
-       xlos, ylos  : The coordinates of the rotatinal plane (degrees).
+       xlos, ylos  : The coordinates of the rotational plane (degrees).
        
     """
 
@@ -127,6 +127,7 @@ def emission_height(P, freq,  ncomp, iseed, hmin, hmax):
        Args:
        -----
        P      : Rotational period (seconds). 
+       freq   : Frequency (GHz)
        ncomp  : Integer number of component.
        iseed  : Integer seed for a pseudo-random number generator.
        hmin   : Minimum emission height (in km).
@@ -144,7 +145,7 @@ def emission_height(P, freq,  ncomp, iseed, hmin, hmax):
 #   If height range is not specified:
     if hmin == None and hmax == None:
         
-        # emission height for a short period pulsar: only one emission height 
+        # emission height for a short period pulsar: only one emission height (KJ07) 
         if P <= 0.15:
             hmin = 950 
             hmax = 1000
@@ -196,7 +197,7 @@ def rho(P, heights):
 #							PATCH WIDTH
 #====================================================================================================================================================
 def patch_width(P, heights):
-    """Function to calculate the width of a patchy emission region 
+    """Function to detrmine the width of a patchy emission region 
        within a pulsar beam at a given height.
     
        Args:
@@ -220,7 +221,7 @@ def patch_width(P, heights):
 # 							PATCH CENTER:
 #====================================================================================================================================================
 def patch_center(P, heights, npatch):
-    """Function find centres of the patches
+    """Function find centres of the patches prohection on an xy-plane
        
        Args:
        -----
@@ -353,20 +354,20 @@ def sc_time(freq, dm, iseed):
     return tau
 
 #====================================================================================================================================================
-#                					WRAPPER:
+#                					PERIODIC PROFILE:
 #====================================================================================================================================================
 def pulsetrain(npulses, numberofbins, prof):
-    """Function to create number of pulses given a single pulse profile.
+    """Function to create a train of pulses given a single pulse profile.
 
        Args:
        -----
        npulses        : number of pulses
-       numberofbins   : number od bins (res; def = 1e3)
+       numberofbins   : number of bins (res; def = 1e3)
        prof           : pulse profile
 
        Return:
        -------
-       train          : a train of pulse profiles
+       train          : a train of pulse profiles (size = size(profile)*npulses)
     """
 
     binsrange = np.linspace(1, numberofbins, num=numberofbins, endpoint=True)
@@ -378,22 +379,22 @@ def pulsetrain(npulses, numberofbins, prof):
     
     return train
 
+#===================================================================================================================================================
+#							EXTRACT A PULSE
+#===================================================================================================================================================
 
 def extractpulse(sc_train, pulsesfromend, binsperpulse):
     """Function that takes the output convolution
        
        Args:
        -----
-       train        : a train of pulse profiles
-       pulsefromend : number position of pulse to extract
+       sc_train     : a scattered train of pulse profiles 
+       pulsefromend : number position of pulse to extract (from the last pulse)
        binsperpulse : number of bins per pulse
 
        Returns:
        --------
-       train[start:end]
-       zerobpulse
-       rectangle
-       flux
+       pulse        : a single pulse profile
     """
     
     if pulsesfromend == 0:
@@ -417,7 +418,7 @@ def extractpulse(sc_train, pulsesfromend, binsperpulse):
 #						     BROADENING FUNCTION:
 #====================================================================================================================================================
 def broadening(tau, P):
-    """Function to broaden the profile for scattering.
+    """Function to determine the broadening function of the profile due to scattering.
        
        Args:
        -----
@@ -426,7 +427,7 @@ def broadening(tau, P):
 
        Return:
        -------
-       broad_func : broadening function
+       broad_func  : broadening function
     """
     t = np.linspace(0, P, num=1e3, endpoint=True)
     broad_func = 1/tau * np.exp(-(t / tau))
@@ -437,7 +438,7 @@ def broadening(tau, P):
 #						        SCATTERING:
 #====================================================================================================================================================
 def scatter(train, bf):
-    """Function to scatter a pulse profile. Returns a convolution of the profile with the scattering function.
+    """Function to scatter a pulse profile / a train of pulse profiles. Returns a convolution of the profile with the scattering function.
 
        Args:
        -----
@@ -481,14 +482,15 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #   initialize parameters:
     xmin = -180.
     xmax = 180.
-    xnum = 1e3
+    #xnum = 1e3
+    res = 1e3 #resolution
     ymin = -180.
     ymax = 180.
-    ynum = 1e3
-    dx = (xmax - xmin)/xnum
-    dy = (ymax - ymin)/ynum
-    x = np.linspace(xmin, xmax, num=xnum, endpoint=True)
-    y = np.linspace(ymin, ymax, num=ynum, endpoint=True)
+    #ynum = 1e3
+    dx = (xmax - xmin)/res
+    dy = (ymax - ymin)/res
+    x = np.linspace(xmin, xmax, num=res, endpoint=True)
+    y = np.linspace(ymin, ymax, num=res, endpoint=True)
     X,Y = np.meshgrid(x,y)
     gauss = np.zeros(len(x))
     Z = np.zeros_like(X)
@@ -502,10 +504,14 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
     
 #   Get the line of sight:
     xlos, ylos, thetalos = los(alpha, beta)
+
+#   Get the centre of the emission patches on the xy-plane
     centerx, centery = patch_center(P, heights, npatch)
+
 #   Get the ofset due to abberation:
     ab_xofset, ab_yofset = aberration(heights)
 
+#   Find the 1D and 2D profile:
     for cid, comp in enumerate(heights):
 #       widths for circular patches:        
         sigmax = patchwidths[cid]
@@ -524,8 +530,8 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
             
 #   1D profile from 2D patch, closest to the line of sight (select nearest neighbors):
     
-    ZxIdx = np.array(xlos/dx, dtype=int) - int(xnum/2) # x index
-    ZyIdx = np.array(ylos/dy, dtype=int) - int(ynum/2) # y index
+    ZxIdx = np.array(xlos/dx, dtype=int) - int(res/2) # x index
+    ZyIdx = np.array(ylos/dy, dtype=int) - int(res/2) # y index
     prof = Z[ZxIdx, ZyIdx]
 
 #   Scattering:
@@ -533,10 +539,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
     bf = broadening(tau, P)
     train =  pulsetrain(3, 1e3, prof)
     sc_train = scatter(train, bf)
-    sc_prof = extractpulse(sc_train, 2, 1e3) #scatter plot
-
-# scattered profile.
-
+    sc_prof = extractpulse(sc_train, 2, 1e3) #scattered pulse
 
 #   Polarized emission:
     #fractional pol:
@@ -587,7 +590,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #        frameon=None)
 #    plt.show()
     #time.ctime(time.time())
-    file_num = time.time()
+    #file_num = time.time()
  #   plt.savefig('beam_F_' + str(freq) + '_dm_' + str(dm) + '_' + str(file_num) + '.pdf', format='pdf')
 
     return sc_prof
@@ -616,21 +619,21 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 # (source: https://pymotw.com/2/argparse/)
 
 parser = argparse.ArgumentParser(description='Plot the patchy emission region as well as the line of sight profile. Running the file without specified argument will produce an output beam and profile from default parameters.')
-parser.add_argument('--alpha', metavar="<alpha>", type=float, default='45', help='inclination angle in degrees (default = 45)')
-parser.add_argument('--beta', metavar="<beta>", type=float, default='5', help='impact parameter in degrees (default = 5)')
-parser.add_argument('--minfreq', metavar="<minfreq>", type=float, default='0.2', help='min frequency in GHz (default = GHz)')
-parser.add_argument('--chanbw', metavar="<chanbw>", type=float, default='0.1', help='channel bandwidth in GHz (default = GHz)')
-parser.add_argument('--nch', metavar="<nch>", type=int, default='5', help='number of channels)')
+parser.add_argument('-alpha', metavar="<alpha>", type=float, default='45', help='inclination angle in degrees (default = 45)')
+parser.add_argument('-beta', metavar="<beta>", type=float, default='5', help='impact parameter in degrees (default = 5)')
 parser.add_argument('-p', metavar="<p>", type=float, default='0.16', help='period in seconds (default = 0.16 s)')
+parser.add_argument('-hmin', metavar="<hmin>", type=float, default=None, help='minimum emission height in km (default = {20 km for P > 0.15 s}, and {950 km for P < 0.15 s})')
+parser.add_argument('-hmax', metavar="<hmax>", type=float, default=None, help='maximum emission height in km (default = 1000 km)')
 parser.add_argument('-nc', metavar="<ncomp>", type=int, default='4', help='integer number of components (default = 4)')
-parser.add_argument('--iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
-parser.add_argument('--hmin', metavar="<hmin>", type=float, default=None, help='minimum emission height in km (default = {20 km for P > 0.15 s}, and {950 km for P < 0.15 s})')
-parser.add_argument('--hmax', metavar="<hmax>", type=float, default=None, help='maximum emission height in km (default = 1000 km)')
-parser.add_argument('--snr', metavar="<snr>", type=float, default=None, help='maximum emission height in km (default = None)')
+parser.add_argument('-npatch', metavar="<npatch>", type=int, default='10', help='number of emission patches (default= 10)' )
+parser.add_argument('-min_freq', metavar="<minfreq>", type=float, default='0.2', help='min frequency in GHz (default = 0.2 GHz)')
+parser.add_argument('-chbw', metavar="<chanbw>", type=float, default='0.8', help='channel bandwidth in GHz (default = 0.8 GHz)')
+parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number of channels)')
+parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
+parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='maximum emission height in km (default = None)')
 parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc (default = 1)')
 #parser.add_argument('-o','--outfile', metavar="<name_suffix>", dest='output', action='store', type=argparse.FileType('w'), help="Write to file.")
-parser.add_argument('--npatch', metavar="<npatch>", type=int, default='10', help='number of emission patches (default=10)' )
-parser.add_argument('--do_ab', default=None, help='include aberration ofset (default = None)')
+parser.add_argument('-do_ab', default=None, help='include aberration ofset (default = None)')
 #parser.add_argument('-d', metavar="<dir>", default='/home/', help='Directory to save plots.')
 #parser.add_argument('-x', "--x11", action='store_true', help='X11 window plot override switch.')
 
@@ -649,8 +652,8 @@ snr = args.snr
 dm = args.dm
 do_ab = args.do_ab
 nch = args.nch
-minfreq = args.minfreq
-chanbw = args.chanbw
+min_freq = args.min_freq
+chbw = args.chbw
 #output = args.output
 #plotwindow = args.x11
 #dir = args.dir
@@ -681,7 +684,7 @@ chanbw = args.chanbw
 #xlos, ylos, thetalos = los(alpha, beta)
 
 #====================================================================================================================================================
-#					Plot the beam and line of sight profile
+#				                   plot the beam 
 #====================================================================================================================================================
 #profile = plotpatch(P, alpha, beta, heights, cx, cy, snr, do_ab)
 #plt.show()
@@ -689,12 +692,22 @@ chanbw = args.chanbw
 
 #profile = np.zeros(nchans)
 prof = []
-max_freq = (nch - 1) * chanbw + minfreq 
-freq = np.linspace(minfreq, max_freq, nch)
+max_freq = (nch - 1) * chbw + min_freq 
+freq = np.linspace(min_freq, max_freq, nch)
 for i in np.arange(len(freq)):
     heights = emission_height(P, freq[i], ncomp, iseed, hmin, hmax)
     prof.append(plotpatch(P, alpha, beta, freq[i], dm, heights, npatch, snr, do_ab))
+
 plt.figure()
+plt.title('Beam plot as different frequency')
+plt.xlabel('phase bin number')
+plt.ylabel('profile')
 plt.imshow(prof, aspect='auto')
 plt.show()
-    
+
+plt.figure()
+for i in np.arange(len(prof)):
+    phase = np.linspace(-180, 180, num=1e3)
+    plt.plot(phase, prof[i])
+    plt.legend("freq: " + str())
+plt.show()
