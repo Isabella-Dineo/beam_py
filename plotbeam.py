@@ -537,9 +537,9 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #   Scattering:
     tau = sc_time(freq, dm, iseed)
     bf = broadening(tau, P)
-    train =  pulsetrain(3, 1e3, prof)
+    train =  pulsetrain(3, res, prof)
     sc_train = scatter(train, bf)
-    sc_prof = extractpulse(sc_train, 2, 1e3) #scattered pulse
+    sc_prof = extractpulse(sc_train, 2, res) #scattered pulse
 
 #   Polarized emission:
     #fractional pol:
@@ -555,7 +555,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
         sigma_s = sigmax #std dev of the profile
         sigma_n = sigmax/np.sqrt(snr) #std dev of the noise
         mean_n = (sigmax**2) * np.sqrt(snr)     
-        noise = np.random.normal(mean_n, sigma_n, 1e3)
+        noise = np.random.normal(mean_n, sigma_n, res)
         prof_i = prof + noise
 #        prof = sc_prof
         #print sigma_n, mean_n
@@ -706,8 +706,11 @@ plt.imshow(prof, aspect='auto')
 plt.show()
 
 plt.figure()
-for i in np.arange(len(prof)):
+
+for j in np.arange(len(prof)):
     phase = np.linspace(-180, 180, num=1e3)
-    plt.plot(phase, prof[i])
-    plt.legend("freq: " + str())
+    plt.plot(phase, prof[j])
+plt.title('pulse profiles')
+plt.xlabel('phase (degrees)')
+plt.ylabel('intensity')
 plt.show()
