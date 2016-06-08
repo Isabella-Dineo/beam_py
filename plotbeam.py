@@ -476,8 +476,8 @@ def dispersive_delay(freq0, freq, dm):
        delta_t : dispersive delay (in seconds)
     """
 #   Convert frequency to MHz:
-    freq0GHz = freq0 / 1e3
-    freqGHz = freq / 1e3
+    freq0MHz = freq0 / 1e3
+    freqMHz = freq / 1e3
 
 #   Determine the delay: 
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
