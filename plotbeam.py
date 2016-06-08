@@ -167,7 +167,7 @@ def emission_height(P, freq,  ncomp, iseed, hmin, hmax):
       
     H_mu = 0.6*H * freq**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
     #H_mu = H * freq**(-gamma) + H0
-    print "H_mu",H_mu            
+    #print "H_mu",H_mu            
         
     return H_mu
 
@@ -328,6 +328,7 @@ def aberration(heights):
     ab_deg = (ab_time / P) * 360
     ab_xofset, ab_yofset = mapphi(alpha, 0.0, ab_deg)
     
+    #print "aberration angle: " ab_deg
     return ab_xofset, ab_yofset
 
 #====================================================================================================================================================
@@ -338,18 +339,19 @@ def sc_time(freq, dm, iseed):
                
        Args:
        -----
-       freq   :   frequency (in GHz) (array)
-       dm     :   dispersion measure (pc cm^-3).
+       freq   :   frequency (in GHz) 
+       dm     :   dispersion measure (pc cm^-3)
     
        Return:
        -------
-       tau     :   the scattering time in sec (array).
+       tau     :   the scattering time (in sec)
        
     """
 #   tau = scattering time scale as in Bhat et al. (2004)
     np.random.seed(iseed)     
     log_tau = -6.46 + 0.154 * np.log10(dm) + 1.07 * (np.log10(dm))**2 - 3.86 * np.log10(freq) +  np.random.uniform(-1,1) # scattering time with added noise term
     tau = 10**log_tau / 1e3 # (time scale in seconds)
+    print "tau: %f sec" %tau
     
     return tau
 
@@ -431,7 +433,7 @@ def broadening(tau, P):
     """
     t = np.linspace(0, P, num=1e3, endpoint=True)
     broad_func = 1/tau * np.exp(-(t / tau))
-    print "tau" + str(tau)
+    #print "tau" + str(tau)
     return broad_func
 
 #====================================================================================================================================================
@@ -457,6 +459,31 @@ def scatter(train, bf):
     out = sc_prof[0 : len(train) + 1] 
 
     return out
+
+#====================================================================================================================================================
+# 						    DISPERSIVE DELAY:
+#====================================================================================================================================================
+def dispersive_delay(freq0, freq, dm):
+    """Function to determine the dispersive delay of a profile.
+       
+       Args:
+       -----
+       freq0   : reference frequency (in GHz)
+       freq    : frequency to delay  (in GHz)
+
+       Return:
+       -------
+       delta_t : dispersive delay (in seconds)
+    """
+#   Convert frequency to MHz:
+    freq0GHz = freq0 / 1e3
+    freqGHz = freq / 1e3
+
+#   Determine the delay: 
+    D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+    delta_t = D * dm *(1/(freq0GHz)**2 - 1/(freqGHz)**2)
+    
+    return delta_t
 #====================================================================================================================================================
 # 							BEAM PLOT:
 #====================================================================================================================================================
@@ -549,46 +576,42 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 
 #   add noise: (gaussian noise)
     if snr == None:
-        prof_i = prof # profile without noise
+        sc_prof = sc_prof # profile without noise
 
     else:
         sigma_s = sigmax #std dev of the profile
         sigma_n = sigmax/np.sqrt(snr) #std dev of the noise
         mean_n = (sigmax**2) * np.sqrt(snr)     
         noise = np.random.normal(mean_n, sigma_n, res)
-        prof_i = prof + noise
+        sc_prof = sc_prof + noise
 #        prof = sc_prof
         #print sigma_n, mean_n
     
 #   patchy emission region:
     
-#    plt.figure(figsize=(10,5))
- #   plt.subplot(1, 2, 1)
-   # plt.plot(xlos, ylos, '--r')
-   # plt.imshow(Z, extent=[-np.amax(Z),np.amax(Z),-np.amax(Z),np.amax(Z)])#, cmap=cm.gray)
-   # plt.title('Patchy emission region of the beam')
-   # plt.xlabel('X (degrees)')
-   # plt.ylabel('Y (degress)')
-   # plt.colorbar()
+    #plt.figure(figsize=(10,5))
+    #plt.subplot(1, 2, 1)
+    #plt.plot(xlos, ylos, '--r')
+    #plt.imshow(Z, extent=[-np.amax(Z),np.amax(Z),-np.amax(Z),np.amax(Z)])#, cmap=cm.gray)
+    #plt.title('Patchy emission region of the beam')
+    #plt.xlabel('X (degrees)')
+    #plt.ylabel('Y (degress)')
+    #plt.colorbar()
 
 
 #   profile: with scattering
-  #  plt.subplot(1, 2, 2)
+    #plt.subplot(1, 2, 2)
     #plt.title("Emission profile from LOS")
     #plt.xlabel("phase")
     #plt.ylabel("intensity")
     #plt.xlim(xmin, xmax)
     #plt.tight_layout()
-#   plt.plot(x, prof_i)
-#   plt.figure()
-#    plt.plot(x, sc_prof)
+    #plt.plot(x, prof_i)
+    #plt.figure()
+    #plt.plot(x, sc_prof)
 #   savefigure:
 #
-#    plt.savefig('', dpi=None, facecolor='w', edgecolor='w',
-#        orientation='portrait', papertype=None, format='pdf',
-#        transparent=False, bbox_inches=None, pad_inches=0.1,
-#        frameon=None)
-#    plt.show()
+    #plt.show()
     #time.ctime(time.time())
     #file_num = time.time()
  #   plt.savefig('beam_F_' + str(freq) + '_dm_' + str(dm) + '_' + str(file_num) + '.pdf', format='pdf')
@@ -645,7 +668,6 @@ npatch = args.npatch
 iseed = args.iseed
 hmin = args.hmin
 hmax = args.hmax
-#freq = np.array(args.freq)
 alpha = args.alpha
 beta = args.beta
 snr = args.snr
@@ -658,59 +680,44 @@ chbw = args.chbw
 #plotwindow = args.x11
 #dir = args.dir
 #====================================================================================================================================================
-#						Get the emission heights
-#====================================================================================================================================================
-
-#heights = emission_height(P, freq, ncomp, iseed, hmin, hmax)
-#print heights
-#====================================================================================================================================================
-#						Find the opening angle
-#====================================================================================================================================================
-#opa = rho(P, heights)
-
-#====================================================================================================================================================
-#					Determine the width of the emission patches
-#====================================================================================================================================================
-#patchwidths = patch_width(P, heights)
-
-#====================================================================================================================================================
-#					   Determine the center of each patch
-#====================================================================================================================================================
-#cx, cy = patch_center(P, heights, npatch)
-
-#====================================================================================================================================================
-# 						Find the line of sight	
-#====================================================================================================================================================
-#xlos, ylos, thetalos = los(alpha, beta)
-
-#====================================================================================================================================================
 #				                   plot the beam 
 #====================================================================================================================================================
-#profile = plotpatch(P, alpha, beta, heights, cx, cy, snr, do_ab)
-#plt.show()
-# nchans == number of frequency channels.
 
-#profile = np.zeros(nchans)
 prof = []
-max_freq = (nch - 1) * chbw + min_freq 
+max_freq = (nch - 1) * chbw + min_freq
 freq = np.linspace(min_freq, max_freq, nch)
+delta_t = np.zeros_like(freq)
+
+# Get profile for each freq:
 for i in np.arange(len(freq)):
     heights = emission_height(P, freq[i], ncomp, iseed, hmin, hmax)
     prof.append(plotpatch(P, alpha, beta, freq[i], dm, heights, npatch, snr, do_ab))
+    print "freq: %f (GHz)" %freq[i]
+#   find the dispersive delay per frequency channel:
+    delta_t += dispersive_delay(max_freq, freq[i], dm)
 
+# plot the two 2D beam with frequency
 plt.figure()
 plt.title('Beam plot as different frequency')
 plt.xlabel('phase bin number')
-plt.ylabel('profile')
-plt.imshow(prof, aspect='auto')
-plt.show()
+plt.ylabel('channels')
+plt.imshow(prof, aspect='auto', origin='lower')
 
+# Plot the pulse profiles for each frequency:
 plt.figure()
 
 for j in np.arange(len(prof)):
+    prof[j]-=np.min(prof[j])   # set a zero baseline
     phase = np.linspace(-180, 180, num=1e3)
-    plt.plot(phase, prof[j])
+    plt.plot(phase, prof[j] + j)
 plt.title('pulse profiles')
 plt.xlabel('phase (degrees)')
-plt.ylabel('intensity')
+plt.xlim(-180, 180)
+plt.ylabel('profile number')
+#print dm, type(dm), freq, type(freq)
+#print "delta t %i" %len(delta_t)
+#print delta_t
+#print "nchan %i" %nch
+#plt.figure()
+#plt.plot(np.linspace(0, nch, num=len(delta_t)), delta_t)
 plt.show()
