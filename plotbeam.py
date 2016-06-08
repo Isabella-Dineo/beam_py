@@ -481,7 +481,7 @@ def dispersive_delay(freq0, freq, dm):
 
 #   Determine the delay: 
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    delta_t = D * dm *(1/(freq0GHz)**2 - 1/(freqGHz)**2)
+    delta_t = D * dm *(1/(freq0MHz)**2 - 1/(freqMHz)**2)
     
     return delta_t
 #====================================================================================================================================================
@@ -714,6 +714,7 @@ plt.title('pulse profiles')
 plt.xlabel('phase (degrees)')
 plt.xlim(-180, 180)
 plt.ylabel('profile number')
+plt.grid()
 #print dm, type(dm), freq, type(freq)
 #print "delta t %i" %len(delta_t)
 #print delta_t
