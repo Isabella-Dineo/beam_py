@@ -697,20 +697,21 @@ for i in np.arange(len(freq)):
     delta_t += dispersive_delay(max_freq, freq[i], dm)
 
 # plot the two 2D beam with frequency
+#plt.subplot(1, 2, 1)
 plt.figure()
-plt.title('Beam plot as different frequency')
+plt.title('Beam')
 plt.xlabel('phase bin number')
 plt.ylabel('channels')
 plt.imshow(prof, aspect='auto', origin='lower')
 
 # Plot the pulse profiles for each frequency:
+#plt.subplot(1, 2, 2)
 plt.figure()
-
 for j in np.arange(len(prof)):
     prof[j]-=np.min(prof[j])   # set a zero baseline
     phase = np.linspace(-180, 180, num=1e3)
     plt.plot(phase, prof[j] + j)
-plt.title('pulse profiles')
+plt.title('A sequence of %i pulse profile' %nch)
 plt.xlabel('phase (degrees)')
 plt.xlim(-180, 180)
 plt.ylabel('profile number')
