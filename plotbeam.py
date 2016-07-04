@@ -358,7 +358,7 @@ def sc_time(freq, dm, iseed):
     np.random.seed(iseed)     
     log_tau = -6.46 + 0.154 * np.log10(dm) + 1.07 * (np.log10(dm))**2 - 3.86 * np.log10(freq) +  np.random.uniform(-1,1) # scattering time with added noise term
     tau = 10**log_tau / 1e3 # (time scale in seconds)
-    print "tau: %f sec" %tau
+#    print "tau: %f sec" %tau
     
     return tau
 
@@ -468,7 +468,7 @@ def scatter(train, bf):
     return out
 
 #===========================================================================================================================================================
-def dm_trial(freq0, freq, phase_at_peak, P):
+def dm_trial(prof):
     """Function to find dm range for dm trial.
        
        Args:
@@ -482,12 +482,26 @@ def dm_trial(freq0, freq, phase_at_peak, P):
        delta_dm  : differential dispersion measure (pc cm^-3).
 
     """
-    D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    delta_t = phase_at_peak * P  # time in seconds
-    delta_dm = delta_t / (D * (freq0**(-2) - freq**(-2)))
-    dm_range = np.linpsace(-delta_dm, delta_dm, endpoint=True, num=10) # try only 10 dm trials (FOR NOW!!!!)
+    # Find the bin where the profile is max:
+    peak = np.max(prof)
+    for prof_id, prof_val in enumerate(prof):
+        if prof[prof_id] == peak:
+            phase_bin = prof_id
+    # Find the width at 10% of the peak
+    peak10 = peak * 0.1 #10% of the peak
+    # width 
 
-    return dm_range
+# Find the corresponding time shift:
+#    tim = phase_at_peak/360 * P
+#    tim_bin = int(tim * (1/t_res)) # index
+    
+
+ #   D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+ #   delta_t = phase_at_peak * P  # time in seconds
+ #   delta_dm = delta_t / (D * (freq0**(-2) - freq**(-2)))
+ #   dm_range = np.linpsace(-delta_dm, delta_dm, endpoint=True, num=10) # try only 10 dm trials (FOR NOW!!!!)
+
+    return phase_bin, peak
 
 #============================================================================================================================================================
 #						DELAY
@@ -513,7 +527,7 @@ def delay(freq0, freq , delta_dm, t_res):
 
     """
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    delta_t = D * ((freq0 * 1e3)**(-2) - (freq * 1e3)**(-2)) * dm # in seconds; eqn. 5.2 (handbook)
+    delta_t = D * ((freq0 * 1e3)**(-2) - (freq * 1e3)**(-2)) * delta_dm # in seconds; eqn. 5.2 (handbook)
     bin_shift = np.int(delta_t * (1/t_res))    # phase shift in bins  
 
     return bin_shift
@@ -658,7 +672,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
     patchwidths = patch_width(P, heights)
       
 #   An arbitrary peak of the profile:
-    peak = 1. 
+    peak = 10. 
 #    peak = 1.   
 #   Get the line of sight:
     xlos, ylos, thetalos = los(alpha, beta, res)
@@ -705,7 +719,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #    plt.subplot(1, 2, 1)
 #    plt.plot(xlos, ylos, '--r')
 #    plt.imshow(Z, extent=[-np.amax(Z),np.amax(Z),-np.amax(Z),np.amax(Z)])#, cmap=cm.gray)
-#    plt.title('Patchy emission region %.3f GHz' %freq)
+#    plt.title('Scattered Patchy emission region %.3f GHz' %freq)
 #    plt.xlabel('X (degrees)')
 #    plt.ylabel('Y (degress)')
 #    plt.colorbar()
@@ -713,7 +727,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 
 #   profile: with scattering
 #    plt.subplot(1, 2, 2)
-#    plt.title("Emission profile from LOS")
+#    plt.title("Scattered Emission profile from LOS")
 #    plt.xlabel("phase")
 #    plt.ylabel("intensity")
 #    plt.xlim(xmin, xmax)
@@ -723,7 +737,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #    plt.plot(x, sc_prof)
 #   savefigure:
 #
-    #plt.show()
+#    plt.show()
     #time.ctime(time.time())
     #file_num = time.time()
  #   plt.savefig('beam_F_' + str(freq) + '_dm_' + str(dm) + '_' + str(file_num) + '.pdf', format='pdf')
@@ -926,7 +940,7 @@ for k in np.arange(len(profile)):
     #Xp, Yp, Zp = np.meshgrid(phase, profile[k], prof_num) 
 
     #ax.plot(phase, profile[k][k])
-    plt.plot(phase, profile[k] + k)
+    plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
     #plt.plot(shifted_phase, noisy_prof[j] + j)
 
 #for k in np.arange(len(prof)):
@@ -937,6 +951,11 @@ plt.xlabel('phase (degrees)')
 plt.xlim(-180, 180)
 plt.ylabel('profile number')
 plt.grid()
+
+#====================
+# AVERAGE PROFILE:
+#====================
+averageP = avg_prof(prof)
 
 # 2D emission region:
 xlos, ylos, thetalos = los(alpha, beta, res)
@@ -951,23 +970,79 @@ plt.colorbar()
 plt.subplot(1, 2, 2)
 #plt.plot(phase, profile[0], label='freq : %.4f MHz' %min_freq)   # profile at min freq
 #print len(profile), len(profile[0]) 
-plt.plot(phase, profile[nch - 1], label=('freq : %.4f MHz' %max_freq)) # profile at max freq
+plt.plot(phase, averageP) # average profile
 plt.legend()
-plt.title('pulse profiles')
-
-
-#=====================
-# AVERAGE PROFILE:
-#=====================
-
-averageP = avg_prof(prof)
-plt.figure()
-plt.plot(phase, averageP)
-plt.title('Average profile: Nothing special.')
+plt.xlim(-180, 180)
+plt.title('Average pulse profile')
 #print dm, type(dm), freq, type(freq)
 #print "delta t %i" %len(delta_t)
 #print delta_t
 #print "nchan %i" %nch
 #plt.figure()
 #plt.plot(np.linspace(0, nch, num=len(delta_t)), delta_t)
+
+#=============================
+#   Scattering: dublicate-ish
+#=============================
+train = []
+bf = []
+sc_prof = []
+tau = sc_time(freq, dm, iseed)
+for pid in np.arange(len(prof)):
+    train.append(pulsetrain(3, res, prof[pid]))
+
+plt.figure(figsize=(10,5))
+plt.subplot(1, 2, 2)
+for fid in np.arange(len(freq)):
+    tau = sc_time(freq[fid], dm, iseed)
+    bf = broadening(tau, P, res)
+    sc_train = scatter(train[fid], bf)
+    sc_prof.append(extractpulse(sc_train, 2, res)) #scattered pulse profile
+    #print len(sc_prof), len(phase)
+    #plt.plot(phase, sc_prof)
+#print len(avg_prof(sc_prof))
+plt.plot(phase, avg_prof(sc_prof))
+plt.title("Scattered Emission profile from LOS")
+plt.xlabel("phase")
+plt.ylabel("intensity")
+plt.xlim(-180, 180)
+plt.tight_layout()
+#plt.plot(x, prof_i)
+#plt.figure()
+#plt.plot(phase, avg_prof(sc_prof))
+
+#   patchy emission region:
+
+plt.subplot(1, 2, 1)
+plt.plot(xlos, ylos, '--r')
+plt.imshow(Z, extent=[-np.amax(Z),np.amax(Z),-np.amax(Z),np.amax(Z)])#, cmap=cm.gray)
+plt.title('Scattered Patchy emission region')
+plt.xlabel('X (degrees)')
+plt.ylabel('Y (degress)')
+plt.colorbar()
+
+#   profile: with scattering
+plt.figure()
+for spid in np.arange(len(sc_prof)):
+    plt.plot(phase, sc_prof[spid] + spid)
+plt.title("Scattered Emission profile from LOS")
+plt.xlabel("phase")
+plt.ylabel("intensity")
+plt.xlim(-180, 180)
+plt.tight_layout()
+#plt.plot(x, prof_i)
+#plt.figure()
+#plt.plot(phase, avg_prof(sc_prof))
+#   savefigure:
 plt.show()
+
+#================================
+#  TEST THE DM_RANGE FUNCTION:
+#===============================
+#print "==================================="
+#print "TESTING DM TRIAL...."
+#print "==================================="
+#for n in np.arange(len(prof)):
+#    b,p = dm_trial(prof[n])
+#    print "peaks", p
+#    print "bin", b
