@@ -391,8 +391,6 @@ else:
 #      4. Fit a DM Curve:
 #======================================================
 
-#bin_shift = []
-#shifted_profile = []
 average_profile = []
 SNR = []
 phase_bin0 = find_phase_bin(profile[nch - 1])
@@ -410,14 +408,18 @@ for dm_id in np.arange(len(dm_range)):
     for freq_id in np.arange(len(freq)):
         bin_shift = delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
         shifted_profile.append(np.roll(profile[freq_id], bin_shift))
-    
-    #plt.plot(phase, shifted_profile[0])
-    #plt.plot(phase, shifted_profile[1])
-    #plt.plot(phase, shifted_profile[2])
     average_profile.append(avg_prof(shifted_profile))
 
 for i in np.arange(len(shifted_profile)):
     plt.plot(phase, shifted_profile[i])
+
+plt.figure()
+plt.grid()
+plt.xlim(-180, 180)
+plt.title("Pulse profiles")
+for j in np.arange(nch):
+    plt.plot(phase, profile[j])
+
 print len(shifted_profile[0])
 print "size of average profile",len(average_profile)
 print "average_profile 0 is", len(average_profile[0])
