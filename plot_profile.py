@@ -395,8 +395,7 @@ average_profile = []
 SNR = []
 phase_bin0 = find_phase_bin(profile[nch - 1])
 phase_bin1 = find_phase_bin(profile[0])
-dm_range = find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
-   
+dm_range = find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch) 
 
 plt.figure() 
 plt.xlim(-180, 180)
@@ -412,20 +411,6 @@ for dm_id in np.arange(len(dm_range)):
 
 for i in np.arange(len(shifted_profile)):
     plt.plot(phase, shifted_profile[i])
-
-plt.figure()
-plt.grid()
-plt.xlim(-180, 180)
-plt.title("Pulse profiles")
-for j in np.arange(nch):
-    plt.plot(phase, profile[j])
-
-print len(shifted_profile[0])
-print "size of average profile",len(average_profile)
-print "average_profile 0 is", len(average_profile[0])
-print "shifted profiles = " + str(len(shifted_profile))
-print "there are " + str(len(dm_range)) + " dm's"
-print "freq * dm = ", len(dm_range)*len(freq)
 
 plt.figure()
 plt.grid()
