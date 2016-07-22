@@ -181,8 +181,8 @@ def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
     # Convert the phase to time and find a corresponding delta_dm:
     delta_t = delta_phase/360. * P
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
-    delta_dm = np.linspace(0, dm, num=20)# try only 10 for now
+    dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2))) 
+    delta_dm = np.linspace(-2*dm, 0, num=20)# try only 10 for now
 
     return delta_dm
 
@@ -201,7 +201,7 @@ def delay(freq_ref, freq , delta_dm, t_res):
 
        Return:
        -------
-       delta_t  : dispersive delay (in seconds)
+       bin_shift: relative shift of freq w.r.t the reference freq (in bins)
        
        Function use the maximum frequency as the reference frequency. 
        Find the dispersion measure that give the maximum S/N.
@@ -392,34 +392,61 @@ else:
 #======================================================
 
 average_profile = []
-SNR = []
+peaks_of_average = []
 phase_bin0 = find_phase_bin(profile[nch - 1])
 phase_bin1 = find_phase_bin(profile[0])
 dm_range = find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch) 
 
-plt.figure() 
-plt.xlim(-180, 180)
-plt.grid()
-plt.legend()
-plt.title("shifted profiles")
+#shifted_profile = []
 for dm_id in np.arange(len(dm_range)):
     shifted_profile = []
+    #plt.figure()
+    #plt.grid()
+    #plt.legend()
+    #plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
+    #print "Shifting the profiles with dm = " + str(dm_range[dm_id])
     for freq_id in np.arange(len(freq)):
+    #    print "frequency " + str(freq[freq_id])       
         bin_shift = delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
         shifted_profile.append(np.roll(profile[freq_id], bin_shift))
+        #plt.plot(phase, shifted_profile[freq_id])
     average_profile.append(avg_prof(shifted_profile))
+    peaks_of_average.append(find_peak(average_profile[dm_id]))
+    
 
-for i in np.arange(len(shifted_profile)):
-    plt.plot(phase, shifted_profile[i])
-
+print "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+print "                  EXCESS DM                                   "
+print "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+print "Dm range in bins = " + str(dm_range/P * 360)
+print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)) + " bins"
 plt.figure()
 plt.grid()
 plt.xlim(-180, 180)
 plt.title("average profile")
-for i in np.arange(len(average_profile)):
-    plt.plot(phase, average_profile[i])
-    plt.legend()
-    
+#peaks_of_average = []
+#for i in np.arange(len(average_profile)):
+#    plt.plot(phase, average_profile[i])
+#    peaks_of_average.append(find_peak(average_profile[i]))
+
+for i in np.arange(len(peaks_of_average)):
+    if peaks_of_average[i] == np.max(peaks_of_average):
+       best_dm = dm_range[i]
+       print "Best dm = " +  str(best_dm) + " pc cm^-3 " 
+       print "Best average profile at index " + str(i)
+       print "Highest peak of average profile " + str(peaks_of_average[i])    
+       print "\n"
+       print "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+       plt.plot(phase, average_profile[i])
+       
+#shifted_with_best_dm = shifted_profile[450:500]
+#print shifted_with_best_dm
+#plt.figure()
+#plt.xlim(-180,180)
+#plt.title("Shifted profile with excess dm = %.5f pc cm^-3" %best_dm)
+#for i in np.arange(len(shifted_with_best_dm)):
+#    plt.plot(phase, shifted_with_best_dm)
+
+
 #======================================================
 #      5. Plot and visualise the data:
 #======================================================

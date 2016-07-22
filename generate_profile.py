@@ -108,9 +108,10 @@ def los(alpha, beta, res):
 #   line of sight x,y plane:
     xlos, ylos = mapphi(alpha, beta, phi)
     thetalos = np.arctan2(ylos, xlos) * (180 / np.pi) - 90.0
-    for i in np.arange(len(thetalos)):
-        if thetalos[i] < 0:
-            thetalos[i] = -thetalos[i]       
+    thetalos = np.abs(thetalos)
+    #for i in np.arange(len(thetalos)):
+    #    if thetalos[i] < 0:
+    #        thetalos[i] = -thetalos[i]       
             
     return xlos, ylos, thetalos
 
@@ -174,7 +175,7 @@ def height_f(H, freq):
     """
     gamma = 0.86 # with rho \prop mu^-0.43 (error +/- 0.06 ref: fig.12 Hassall et al. 2012.)
 
-    H_mu = 0.6*H * freq**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
+    H_mu = 0.6*H * (freq * 1e9)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
     
     return H_mu
 #====================================================================================================================================================
@@ -697,8 +698,8 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
     patchwidths = patch_width(P, heights)
       
 #   An arbitrary peak of the profile:
-    peak = 10. 
-#    peak = 1.   
+    #peak = 10. 
+    peakAmp = 10.   
 #   Get the line of sight:
     xlos, ylos, thetalos = los(alpha, beta, res)
 
@@ -721,9 +722,9 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #       2D patch (including aberation):
         for pc in zip(patchCenterX, patchCenterY):
             if do_ab == None:
-                Z += peak * np.exp(-((X - pc[0])**2 / (2 * sigmax**2) + (Y - pc[1])**2 / (2 * sigmay**2)))
+                Z += peakAmp * np.exp(-((X - pc[0])**2 / (2 * sigmax**2) + (Y - pc[1])**2 / (2 * sigmay**2)))
             else:
-                Z += peak * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
+                Z += peakAmp * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
             
 #   1D profile from 2D patch, closest to the line of sight (select nearest neighbors):
     
@@ -1034,7 +1035,7 @@ for k in np.arange(len(profile)):
     plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
 plt.title('A sequence of %i pulse profile' %nch)
 plt.xlabel('phase (degrees)')
-plt.xlim(-180, 180)
+plt.xlim(-180,180)
 plt.ylabel('profile number')
 plt.grid()
 
@@ -1044,13 +1045,15 @@ xlos, ylos, thetalos = los(alpha, beta, res)
 plt.figure(figsize=(10,5))
 plt.subplot(1, 2, 1)
 plt.plot(xlos, ylos, '--r')
-plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
+#plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
+plt.imshow(beam[0], extent=[-180, 180, -180, 180])
 plt.title('Patchy emission')
 plt.xlabel('X (degrees)')
 plt.ylabel('Y (degress)')
 plt.colorbar()
 plt.subplot(1, 2, 2)
-plt.plot(phase, averageP[0]) # average profile using first DM?
+#plt.plot(phase, averageP[0]) # average profile using first DM?
+plt.plot(phase, profile[0]) # average profile using first DM?
 #plt.plot(phase, sc_prof[nch - 1])
 plt.legend()
 plt.xlim(-180, 180)
