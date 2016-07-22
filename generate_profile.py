@@ -175,7 +175,7 @@ def height_f(H, freq):
     """
     gamma = 0.86 # with rho \prop mu^-0.43 (error +/- 0.06 ref: fig.12 Hassall et al. 2012.)
 
-    H_mu = 0.6*H * (freq * 1e9)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
+    H_mu = 0.6*H * (freq)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
     
     return H_mu
 #====================================================================================================================================================
