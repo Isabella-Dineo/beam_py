@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import argparse
+import os, sys, time
+
 
 #======================================================
 #    DEFINE FUNCTIONS NEEDED:
@@ -182,7 +184,7 @@ def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
     delta_t = delta_phase/360. * P
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
     dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2))) 
-    delta_dm = np.linspace(-2*dm, 0, num=20)# try only 10 for now
+    delta_dm = np.linspace(-2*dm, 0, num=20)# try only 20 for now
 
     return delta_dm
 
@@ -318,17 +320,19 @@ def add_noise(prof, rms, iseed, res):
 #====================================================================================================================================================================
 #                                              INITIALIZE PARAMETERS FROM THE COMMAND LINE:
 #====================================================================================================================================================================
-parser = argparse.ArgumentParser(description='Find excess DM due to profile evolution with frequency. Uses the files produced when running gen_profile.py.')
-parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
-parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
-parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc (default = 1)')
-parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
+parser = argparse.ArgumentParser(description='Find excess DM due to profile evolution with frequency. Uses the files produced when running gen_profile.py.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator.')
+parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio.')
+parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc.')
+parser.add_argument('-scatter', metavar="<0/1>", default=None, help='include scattering.')
+parser.add_argument('-out', metavar="<outFile>", type=str, default="outFile", help='output file name.')
 
 args = parser.parse_args()
 dm = args.dm
 iseed = args.iseed
 scr = args.scatter
 snr = args.snr
+outFile = args.out
 
 #======================================================
 #    1. Load the files containing the profile and beam:
@@ -336,7 +340,7 @@ snr = args.snr
 
 prof_file = open('prof_data.txt', 'rb')
 #profDict = pickle.load(prof_file)
-#prof = profDict['prof'
+#prof = profDict['prof']
 #phase = profDict['phase']
 #beam = profDict['beam']
 prof = pickle.load(prof_file)
@@ -365,10 +369,10 @@ if scr == None:
 
 else:
     sc_prof = []
-    for pid in np.arange(len(prof)):
+    for pid in range(nch):
         train.append(pulsetrain(3, res, prof[pid]))
 
-    for fid in np.arange(len(freq)):
+    for fid in range(nch):
         tau = sc_time(freq[fid], dm, iseed)
         bf = broadening(tau, P, res)
         sc_train = scatter(train[fid], bf)
@@ -378,7 +382,7 @@ else:
 #     3. Add noise to the scattered profile:
 #======================================================
 peaks = []
-for j in np.arange(len(prof)):
+for j in range(nch):
     peaks.append(find_peak(sc_prof[j]))
 
 if snr == None:
@@ -397,45 +401,57 @@ phase_bin0 = find_phase_bin(profile[nch - 1])
 phase_bin1 = find_phase_bin(profile[0])
 dm_range = find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch) 
 
-#shifted_profile = []
-for dm_id in np.arange(len(dm_range)):
+# Create a directory to save the files.
+#date = time.strftime("%Y-%m-%d")
+date = time.ctime(time.time())
+newDir = os.mkdir(date)
+prevDir = os.getcwd()
+#os.chdir(str(prevDir)/str(newDir))
+for dm_id in range(len(dm_range)):
     shifted_profile = []
-    #plt.figure()
-    #plt.grid()
-    #plt.legend()
-    #plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
+    fig = plt.figure()
+    plt.grid()
+    plt.xlim(-180, 180)
+    plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
+    plt.xlabel("phase (degrees)")
+    plt.ylabel("Intensity")
     #print "Shifting the profiles with dm = " + str(dm_range[dm_id])
-    for freq_id in np.arange(len(freq)):
-    #    print "frequency " + str(freq[freq_id])       
+    for freq_id in range(nch):
+        #print "frequency " + str(freq[freq_id])       
         bin_shift = delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
         shifted_profile.append(np.roll(profile[freq_id], bin_shift))
-        #plt.plot(phase, shifted_profile[freq_id])
+        plt.plot(phase, shifted_profile[freq_id])
     average_profile.append(avg_prof(shifted_profile))
     peaks_of_average.append(find_peak(average_profile[dm_id]))
-    
+    fig.savefig(outFile+'_'+str(time.time())+'.png')
 
-print "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
-print "                  EXCESS DM                                   "
-print "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
-print "Dm range in bins = " + str(dm_range/P * 360)
-print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)) + " bins"
+# Make an animation of the files to see the dm_shift.
+os.system("convert -delay 50 -loop 0 outFile*.png animation.gif")
+
+print "I------------------------------------------------------------I"
+print "I                 EXCESS DM                                  I"
+print "I------------------------------------------------------------I"
+#print "Dm range in bins = " + str(dm_range/P * 360)
+print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)/P * 360) + " bins"
 plt.figure()
 plt.grid()
 plt.xlim(-180, 180)
 plt.title("average profile")
+plt.xlabel("phase (degrees)")
+plt.ylabel("Intensity")
 #peaks_of_average = []
 #for i in np.arange(len(average_profile)):
 #    plt.plot(phase, average_profile[i])
 #    peaks_of_average.append(find_peak(average_profile[i]))
 
-for i in np.arange(len(peaks_of_average)):
+for i in range(len(peaks_of_average)):
     if peaks_of_average[i] == np.max(peaks_of_average):
        best_dm = dm_range[i]
        print "Best dm = " +  str(best_dm) + " pc cm^-3 " 
        print "Best average profile at index " + str(i)
        print "Highest peak of average profile " + str(peaks_of_average[i])    
        print "\n"
-       print "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+       print "I-----------------------------------------------------------------I"
        plt.plot(phase, average_profile[i])
        
 #shifted_with_best_dm = shifted_profile[450:500]

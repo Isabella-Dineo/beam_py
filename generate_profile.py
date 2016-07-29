@@ -1040,24 +1040,25 @@ plt.ylabel('profile number')
 plt.grid()
 
 #    2D emission region:
-
+meanBeam = np.mean(beam, axis=0)
 xlos, ylos, thetalos = los(alpha, beta, res)
+#for i in range(len(beam)):
 plt.figure(figsize=(10,5))
 plt.subplot(1, 2, 1)
 plt.plot(xlos, ylos, '--r')
 #plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
-plt.imshow(beam[0], extent=[-180, 180, -180, 180])
-plt.title('Patchy emission')
+#for i in range(len(beam)):
+#    plt.imshow(beam[i], extent=[-180, 180, -180, 180])
+plt.imshow(meanBeam, extent=[-180, 180, -180, 180])
+plt.title('Patchy emission' )
 plt.xlabel('X (degrees)')
 plt.ylabel('Y (degress)')
 plt.colorbar()
 plt.subplot(1, 2, 2)
 #plt.plot(phase, averageP[0]) # average profile using first DM?
-plt.plot(phase, profile[0]) # average profile using first DM?
-#plt.plot(phase, sc_prof[nch - 1])
-plt.legend()
+plt.plot(phase, profile[i]) # average profile using first DM?
 plt.xlim(-180, 180)
-plt.title('Average pulse profile')
+plt.title('Profile at freq = %.4f GHz' % freq[-1])
 
 
 #==========================================
