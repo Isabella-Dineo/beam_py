@@ -1,0 +1,11 @@
+65.417516
+102.75
+148.4192
+1710.00004
+
+#BEST FIT:
+./../../gaussianFit.py --txt B1133+16_L40811_LBA.prof.txt --height 0.8 1  --center -0.01 0.01 --width 0.001 0.001 --freq LBA_65.41
+./../../gaussianFit.py --txt kl99_102.txt --height 1 0.2 0.9  --center -0.03 0.001 0.02 --width -0.04 0.02 0.04 --freq 102
+./../../gaussianFit.py --txt HBA.txt --height 1 0.2 0.8  --center -0.01 0.001 0.01 --width -0.004 0.002 0.001 --freq HBA_148.42
+./../../gaussianFit.py --txt hx97b_1710.txt --height 1 0.3 0.4  --center -0.06 0.04 0.06 --width -0.04 0.02 0.06 --freq 1710
+
