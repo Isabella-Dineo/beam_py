@@ -106,25 +106,58 @@ else:
     w = args.width
     fig = plt.figure()
     plt.plot(phase, prof, lw=3, c='b', label='proflile')
+    plt.xlabel('Phase')
+    plt.ylabel('Flux density')
+    plt.legend()
+
     if len(h) == 1:
         print "Fitting 1 Gaussian to data..."
         guess1 = np.asarray([h[0], c[0]], w[0], 0)
         popt1, pcov1 = curve_fit(gaussian1, phase, prof, p0=guess1)
-        plt.plot(phase, gaussian1(phase, *popt1), lw=1, c='r', ls='--', label='Fit of 1 Gaussian.')
+        fit = gaussian1(phase, *popt1)
+        residual = prof - fit 
+        plt.plot(phase, fit, lw=1, c='r', ls='--', label='Fit of 1 Gaussian.')
+        fig = plt.figure()
+        plt.plot(phase, prof, lw=3, c='b', label='proflile')
+        plt.xlabel('Phase')
+        plt.ylabel('Flux density')
+        plt.legend()
+        plt.figure()
+        plt.plot(phase, residual)
+        plt.title('Residual plot')
 
     if len(h) == 2:
         print "Fitting %d Gaussians to data..." %len(h)
         #for hid in range(len(h)):
         guess2 = np.asarray([h[0], c[0], w[0], h[1], c[1], w[1], 0])
         popt2, pcov2 = curve_fit(gaussian2, phase, prof, p0=guess2)
-        plt.plot(phase, gaussian2(phase, *popt2), lw=1, c='r', ls='--', label='Fit of 2 Gaussians.')
+        fit = gaussian2(phase, *popt2)
+        residual = prof - fit
+        plt.plot(phase, fit, lw=1, c='r', ls='--', label='Fit of 2 Gaussians.')
+        plt.xlabel('Phase')
+        plt.ylabel('Flux density')
+        plt.legend()
+        fig.savefig(str(args.freq) + '_' + str(time.time()) + '.png')
+        plt.figure()
+        plt.plot(phase, residual)
+        plt.title('Residual plot')
 
     if len(h) == 3:
         print "Fitting a multi-peak gaussian..."
         popts = []
         guess3 = np.asarray([h[0], c[0], w[0], h[1], c[1], w[1], h[2], c[2], w[2], 0])
         popt3, pcov3 = curve_fit(gaussian3, phase, prof, p0=guess3)
-        plt.plot(phase, gaussian3(phase, *popt3), lw=1, c='r', ls='--', label='Fit of 1 Gaussian')
+        fit = gaussian3(phase, *popt3)
+        residual = prof - fit 
+        plt.plot(phase, fit, lw=1, c='r', ls='--', label='Fit of 1 Gaussian')
+        plt.xlabel('Phase')
+        plt.ylabel('Flux density')
+        plt.legend()
+        fig.savefig(str(args.freq) + '_' + str(time.time()) + '.png')
+        plt.figure()
+        plt.plot(phase, residual)
+        plt.title('Residual plot')
+       
         #popts.append(popt)
         
 #        plt.figure() 
@@ -147,8 +180,4 @@ else:
     #plt.plot(phase, prof, lw=5, c='g', label='Profile')
     #plt.plot(phase, gaussian2(prof, *guess2), lw=3, c='b', ls='-', label='Fit of 2 gaussians')
     #plt.plot(phase, gaussian1(prof, *optim1), lw=1, c='r', ls='--', label='Fit of 1 gaussian') 
-    plt.xlabel('Phase')
-    plt.ylabel('Flux density')
-    plt.legend()
-    fig.savefig(str(args.freq) + '_' + str(time.time()) + '.png')
     plt.show()
