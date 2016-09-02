@@ -155,7 +155,7 @@ else:
         plt.legend()
         fig.savefig(str(args.freq) + '_' + str(time.time()) + '.png')
         plt.figure()
-        plt.plot(phase, residual)
+        plt.plot(phase, residual, 'g:')
         plt.title('Residual plot')
        
         #popts.append(popt)
