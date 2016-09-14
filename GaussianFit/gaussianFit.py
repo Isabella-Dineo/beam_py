@@ -40,6 +40,30 @@ def gaussian2(data, h1, c1, w1, h2, c2, w2, offset):
     gauss = gaussian3(data, h1, c1, w1, h2, c2, w2, 0, 0, 1, offset)
     return gauss
 
+#def gaussian(data, h, c, w, offset):
+#    """
+#    Args:
+#    -----
+#    h : an array of heights
+#    c : an array of centers
+#    w : an array of widths
+#    """
+#    if len(h) != len(c) and len(h) != len(w):
+#        print 'Please give parameters with the same length!'
+#        sys.exit(1)
+#    gauss = []
+#    num = len(h)
+#    for gid in range(num):
+#        gauss.append(h[gid] * np.exp(-(data - c[gid])**2/(2*w[gid]**2)) + offset)
+
+#    return gauss
+
+
+
+#errorFunc = lambda p, x, y: (gaussian(x, *p) - y)**2
+
+
+
 errorFunc1 = lambda p, x, y: (gaussian1(x, *p) - y)**2
 errorFunc2 = lambda p, x, y: (gaussian2(x, *p) - y)**2
 errorFunc3 = lambda p, x, y: (gaussian3(x, *p) - y)**2
