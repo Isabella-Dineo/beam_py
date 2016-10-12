@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 import numpy as np
 import pickle
@@ -322,7 +322,7 @@ def add_noise(prof, rms, iseed, res):
 #====================================================================================================================================================================
 parser = argparse.ArgumentParser(description='Find excess DM due to profile evolution with frequency. Uses the files produced when running gen_profile.py.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator.')
-parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio.')
+parser.add_argument('-snr', metavar="<snr>", type=float, default=10000, help='signal to noise ratio.')
 parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc.')
 parser.add_argument('-scatter', metavar="<0/1>", default=None, help='include scattering.')
 parser.add_argument('-out', metavar="<outFile>", type=str, default="outFile", help='output file name.')
@@ -404,8 +404,8 @@ dm_range = find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1
 # Create a directory to save the files.
 #date = time.strftime("%Y-%m-%d")
 date = time.ctime(time.time())
-newDir = os.mkdir(date)
-prevDir = os.getcwd()
+#newDir = os.mkdir(date)
+#prevDir = os.getcwd()
 #os.chdir(str(prevDir)/str(newDir))
 for dm_id in range(len(dm_range)):
     shifted_profile = []
@@ -423,16 +423,16 @@ for dm_id in range(len(dm_range)):
         plt.plot(phase, shifted_profile[freq_id])
     average_profile.append(avg_prof(shifted_profile))
     peaks_of_average.append(find_peak(average_profile[dm_id]))
-    fig.savefig(outFile+'_'+str(time.time())+'.png')
+ #   fig.savefig(outFile+'_'+str(time.time())+'.png')
 
 # Make an animation of the files to see the dm_shift.
-os.system("convert -delay 50 -loop 0 outFile*.png animation.gif")
+#os.system("convert -delay 50 -loop 0 outFile*.png animation.gif")
 
-print "I------------------------------------------------------------I"
-print "I                 EXCESS DM                                  I"
-print "I------------------------------------------------------------I"
+#print "I------------------------------------------------------------I"
+#print "I                 EXCESS DM                                  I"
+#print "I------------------------------------------------------------I"
 #print "Dm range in bins = " + str(dm_range/P * 360)
-print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)/P * 360) + " bins"
+#print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)/P * 360) + " bins"
 plt.figure()
 plt.grid()
 plt.xlim(-180, 180)
@@ -447,13 +447,16 @@ plt.ylabel("Intensity")
 for i in range(len(peaks_of_average)):
     if peaks_of_average[i] == np.max(peaks_of_average):
        best_dm = dm_range[i]
-       print "Best dm = " +  str(best_dm) + " pc cm^-3 " 
-       print "Best average profile at index " + str(i)
-       print "Highest peak of average profile " + str(peaks_of_average[i])    
-       print "\n"
-       print "I-----------------------------------------------------------------I"
-       plt.plot(phase, average_profile[i])
-       
+f = open('bestDM.dat', 'a')
+f.write(str(best_dm) + '\n')
+f.close()
+       #print "Best dm = " +  str(best_dm) + " pc cm^-3 " 
+       #print "Best average profile at index " + str(i)
+       #print "Highest peak of average profile " + str(peaks_of_average[i])    
+       #print "\n"
+       #print "I-----------------------------------------------------------------I"
+       #plt.plot(phase, average_profile[i])
+       #plt.show()
 #shifted_with_best_dm = shifted_profile[450:500]
 #print shifted_with_best_dm
 #plt.figure()
@@ -506,4 +509,4 @@ for i in range(len(peaks_of_average)):
 #=========================================================
 #   
 #=========================================================
-plt.show()
+#plt.show()

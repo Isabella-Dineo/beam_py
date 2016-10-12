@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 from scipy import constants
 import argparse
 import pickle
-
+import os
 #######################
 # DEFINE FUNCTIONS.
 #######################
@@ -151,7 +151,7 @@ def emission_height(P, ncomp, iseed, hmin, hmax):
 
         elif P > 0.15:
             hmin = 20
-            hmax = 1000
+            hmax = 500
             H = np.random.uniform(hmin, hmax, size=num_H)
 
 #   For specified height range:
@@ -173,10 +173,11 @@ def height_f(H, freq):
        -------
        H_mu  : Frequency dependent height (km)
     """
-    gamma = 0.86 # with rho \prop mu^-0.43 (error +/- 0.06 ref: fig.12 Hassall et al. 2012.)
+    gamma = 0.83 # with rho \prop mu^-0.43 (error +/- 0.06 ref: fig.12 Hassall et al. 2012.)
 
-    H_mu = 0.6*H * (freq)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
-    
+    #H_mu = 0.6*H * (freq)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
+    H_mu = H * (9 * freq**(-0.95) + 41)/(9 + 41) 
+    #H_mu = 0.4 * H * freq**(-0.95) + 0.2*H
     return H_mu
 #====================================================================================================================================================
 
@@ -586,6 +587,19 @@ def find_peak(prof):
     
     return peak
 
+def find_width(profile):
+    peak = find_peak(profile)
+    for i in range(len(profile)):
+        if profile[i] > 0.1 * peak:
+            left = i
+            break
+    for i in range(len(profile)):
+        if profile[-i] > 0.1 *peak:
+            right = len(profile) - i
+            break
+    w10 =(float(right -left)/float(len(profile)))* 360.
+    return w10
+ 
 #====================================================================================================================================================
 #						   DETERMINE THE NOISE LEVEL:
 #====================================================================================================================================================
@@ -776,22 +790,6 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
 #==================================================================================================================================================
 #			    		      Initialise parameters from the command line
 #==================================================================================================================================================
-# argparse is a complete argument processing library. Arguments can trigger different actions, specified by the "action" argument 
-# to add_argument(). 
-# Supported actions include storing the argument (singly, or as part of a list), storing a constant value when the argument is
-# encountered (including special handling for true/false values for boolean switches), counting the number of times
-# an argument is seen, and calling a callback. 
-# The default action is to store the argument value. In this case, if a type is provided, the value is converted to that type 
-# before it is stored. 
-# If the dest argument is provided, the value is saved to an attribute of that name on the Namespace object returned when the 
-# command line arguments are parsed.
-#
-# Once all of the arguments are defined, you can parse the command line by passing a sequence of argument strings to parse_args(). 
-# By default, the arguments are taken from sys.argv[1:], but you can also pass your own list. The options are processed using the 
-# GNU/POSIX syntax, so option and argument values can be mixed in the sequence.
-# The return value from parse_args() is a Namespace containing the arguments to the command. The object holds the argument values 
-# as attributes, so if your argument dest is "myoption", you access the value as args.myoption. 
-# (source: https://pymotw.com/2/argparse/)
 
 parser = argparse.ArgumentParser(description='Plot the patchy emission region as well as the line of sight profile. Running the file without specified argument will produce an output beam and profile from default parameters.')
 parser.add_argument('-alpha', metavar="<alpha>", type=float, default='45', help='inclination angle in degrees (default = 45)')
@@ -842,6 +840,7 @@ scr = args.scatter
 beam = []
 prof = []
 peaks = []
+w10 = []
 res = 1e3
 t_res = P/res
 phase = np.linspace(-180, 180, num=res)
@@ -852,17 +851,18 @@ freq = np.linspace(min_freq, max_freq, nch) #channel frequency in GHz!!!
 #     1. Find the emission height:
 #=======================================
 H = emission_height(P, ncomp, iseed, hmin, hmax)
-
+#print 'Initial height:', H
 #========================================
 #     2. Get profile at each frequency:
 #========================================
 for i in np.arange(len(freq)):
     heights = height_f(H, freq[i]) # frequency dependent H
-    print "heights : " + str(heights) + "km"
+#    print "heights : " + str(heights) + "km"
     pr, Z = plotpatch(P, alpha, beta, freq[i], dm, heights, npatch, snr, do_ab)
+    w10.append(find_width(pr))
     prof.append(pr)
     beam.append(Z)
-    print "freq: %f (GHz)" %freq[i]
+    #print 'freq:', freq[i], '(GHz) w10:', w10, '(degrees)' 
 
 #========================================
 #2.1 Write out the profile into a file:
@@ -875,7 +875,11 @@ pickle.dump(phase, outfile)
 pickle.dump(beam, outfile)
 outfile.close()
 
-# pickle "beam" using protocol  (ASCII
+pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1]])
+f = open('pulsarParams.txt', 'a')
+f.write(' '.join([str(item) for item in pulsarParams]) + '\n')
+f.close()
+
 params = open('params_file.txt', 'wb')
 pickle.dump(freq, params)
 pickle.dump(P, params)
@@ -1049,14 +1053,14 @@ plt.plot(xlos, ylos, '--r')
 #plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
 #for i in range(len(beam)):
 #    plt.imshow(beam[i], extent=[-180, 180, -180, 180])
-plt.imshow(meanBeam, extent=[-180, 180, -180, 180])
+plt.imshow(beam[0], extent=[-180, 180, -180, 180])
 plt.title('Patchy emission' )
 plt.xlabel('X (degrees)')
 plt.ylabel('Y (degress)')
 plt.colorbar()
 plt.subplot(1, 2, 2)
 #plt.plot(phase, averageP[0]) # average profile using first DM?
-plt.plot(phase, profile[i]) # average profile using first DM?
+plt.plot(phase, profile[0]) # average profile using first DM?
 plt.xlim(-180, 180)
 plt.title('Profile at freq = %.4f GHz' % freq[-1])
 
@@ -1101,7 +1105,6 @@ plt.title('Profile at freq = %.4f GHz' % freq[-1])
 #plt.figure()
 #plt.plot(phase, avg_prof(sc_prof))
 #   savefigure:
-plt.show()
 
 #================================
 #  TEST THE DM_RANGE FUNCTION:
