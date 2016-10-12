@@ -892,11 +892,11 @@ params.close()
 #     3. plot the LOS beam:
 #========================================
 #plt.subplot(1, 2, 1)
-plt.figure()
-plt.title('Beam')
-plt.xlabel('phase bin number')
-plt.ylabel('channels')
-plt.imshow(prof, aspect='auto', origin='lower')
+#plt.figure()
+#plt.title('Beam')
+#plt.xlabel('phase bin number')
+#plt.ylabel('channels')
+#plt.imshow(prof, aspect='auto', origin='lower')
 
 #==========================================
 #     4. Scatter the line of sight profile: 
@@ -1037,32 +1037,31 @@ for k in np.arange(len(profile)):
     prof_num = np.arange(1, len(profile) + 1)
     profile[k] -= np.min(profile[k])
     plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
-plt.title('A sequence of %i pulse profile' %nch)
-plt.xlabel('phase (degrees)')
-plt.xlim(-180,180)
-plt.ylabel('profile number')
-plt.grid()
+#plt.title('A sequence of %i pulse profile' %nch)
+#plt.xlabel('phase (degrees)')
+#plt.xlim(-180,180)
+#plt.ylabel('profile number')
+#plt.grid()
 
 #    2D emission region:
 meanBeam = np.mean(beam, axis=0)
 xlos, ylos, thetalos = los(alpha, beta, res)
 #for i in range(len(beam)):
-plt.figure(figsize=(10,5))
-plt.subplot(1, 2, 1)
-plt.plot(xlos, ylos, '--r')
+#plt.figure(figsize=(10,5))
+#plt.subplot(1, 2, 1)
+#plt.plot(xlos, ylos, '--r')
 #plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
 #for i in range(len(beam)):
 #    plt.imshow(beam[i], extent=[-180, 180, -180, 180])
-plt.imshow(beam[0], extent=[-180, 180, -180, 180])
-plt.title('Patchy emission' )
-plt.xlabel('X (degrees)')
-plt.ylabel('Y (degress)')
-plt.colorbar()
-plt.subplot(1, 2, 2)
-#plt.plot(phase, averageP[0]) # average profile using first DM?
-plt.plot(phase, profile[0]) # average profile using first DM?
-plt.xlim(-180, 180)
-plt.title('Profile at freq = %.4f GHz' % freq[-1])
+#plt.imshow(beam[0], extent=[-180, 180, -180, 180])
+#plt.title('Patchy emission' )
+#plt.xlabel('X (degrees)')
+#plt.ylabel('Y (degress)')
+#plt.colorbar()
+#plt.subplot(1, 2, 2)
+##plt.plot(phase, averageP[0]) # average profile using first DM?
+#plt.plot(phase, profile[0]) # average profile using first DM?
+#plt.xlim(-180, 180)#lt.title('Profile at freq = %.4f GHz' % freq[-1])
 
 
 #==========================================

@@ -409,12 +409,12 @@ date = time.ctime(time.time())
 #os.chdir(str(prevDir)/str(newDir))
 for dm_id in range(len(dm_range)):
     shifted_profile = []
-    fig = plt.figure()
-    plt.grid()
-    plt.xlim(-180, 180)
-    plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
-    plt.xlabel("phase (degrees)")
-    plt.ylabel("Intensity")
+    #fig = plt.figure()
+    #plt.grid()
+    #plt.xlim(-180, 180)
+    #plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
+    #plt.xlabel("phase (degrees)")
+    #plt.ylabel("Intensity")
     #print "Shifting the profiles with dm = " + str(dm_range[dm_id])
     for freq_id in range(nch):
         #print "frequency " + str(freq[freq_id])       
@@ -433,12 +433,12 @@ for dm_id in range(len(dm_range)):
 #print "I------------------------------------------------------------I"
 #print "Dm range in bins = " + str(dm_range/P * 360)
 #print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)/P * 360) + " bins"
-plt.figure()
-plt.grid()
-plt.xlim(-180, 180)
-plt.title("average profile")
-plt.xlabel("phase (degrees)")
-plt.ylabel("Intensity")
+#plt.figure()
+#plt.grid()
+#plt.xlim(-180, 180)
+#plt.title("average profile")
+#plt.xlabel("phase (degrees)")
+#lt.ylabel("Intensity")
 #peaks_of_average = []
 #for i in np.arange(len(average_profile)):
 #    plt.plot(phase, average_profile[i])
