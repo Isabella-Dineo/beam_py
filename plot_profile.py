@@ -178,16 +178,20 @@ def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
     # Find the delta phase shift between the min and max frequency profile:
     phase_at_peak0 = phase[phase_bin0] # peak at reference profile (/max freq)
     phase_at_peak1 = phase[phase_bin1]
+    print "bins of peaks: ", phase_bin0, phase_bin1
+    D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+    range_dm = 0.01 # dm units
     if phase_bin0==phase_bin1:
-        delta_phase = phase[10]
+        dm = 0
+    #        delta_phase = phase[10] - phase[0]
     else:
         delta_phase = phase_at_peak1 - phase_at_peak0
-    # Convert the phase to time and find a corresponding delta_dm:
-    delta_t = delta_phase/360. * P
-    D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2))) 
-    delta_dm = np.linspace(-2*dm, 0, num=20)# try only 20 for now
-
+        # Convert the phase to time and find a corresponding delta_dm:
+        delta_t = delta_phase/360. * P
+        dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2))) 
+        print "find_delta_dm: ", dm, delta_t  
+    delta_dm = np.linspace(-dm - range_dm, -dm + range_dm, num=20)# try only 20 for now
+    print delta_dm
     return delta_dm
 
 
@@ -267,7 +271,7 @@ def noise_rms(snr, peak):
        rms   : noise rms
     """
 
-    rms = np.sqrt(peak**2 / snr)
+    rms = peak / snr
 
     return rms
 
@@ -414,22 +418,30 @@ date = time.ctime(time.time())
 #os.chdir(str(prevDir)/str(newDir))
 for dm_id in range(len(dm_range)):
     shifted_profile = []
-    #fig = plt.figure()
-    #plt.grid()
-    #plt.xlim(-180, 180)
-    #plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
-    #plt.xlabel("phase (degrees)")
-    #plt.ylabel("Intensity")
+    '''
+    fig = plt.figure()
+    plt.grid()
+    plt.xlim(-180, 180)
+    plt.title("shifted profiles with respect to dm = " + str(dm_range[dm_id]))
+    plt.xlabel("phase (degrees)")
+    plt.ylabel("Intensity")
+    '''
     #print "Shifting the profiles with dm = " + str(dm_range[dm_id])
-    for freq_id in range(nch):
+    for freq_id in range(nch-1):
         #print "frequency " + str(freq[freq_id])       
         bin_shift = delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
+        #print "frequency and shift: ", freq[freq_id], bin_shift
         shifted_profile.append(np.roll(profile[freq_id], bin_shift))
-        plt.plot(phase, shifted_profile[freq_id])
+        #plt.plot(phase, shifted_profile[freq_id])
     average_profile.append(avg_prof(shifted_profile))
     peaks_of_average.append(find_peak(average_profile[dm_id]))
- #   fig.savefig(outFile+'_'+str(time.time())+'.png')
-
+    #print "SNR vs DM: ", peaks_of_average[-1], dm_range[dm_id]
+    #fig.savefig(outFile+'_'+str(time.time())+'.png')
+'''
+fig2 = plt.figure()
+plt.plot(dm_range, peaks_of_average)
+fig2.savefig('diagnosticSNR_DM.png')
+'''
 # Make an animation of the files to see the dm_shift.
 #os.system("convert -delay 50 -loop 0 outFile*.png animation.gif")
 

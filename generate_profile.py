@@ -879,7 +879,7 @@ pickle.dump(phase, outfile)
 pickle.dump(beam, outfile)
 outfile.close()
 
-pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1]])
+pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed])
 f = open(pulsarParamsFile, 'a')
 f.write(' '.join([str(item) for item in pulsarParams]) + ' ')
 f.close()
