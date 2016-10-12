@@ -5,13 +5,16 @@ import os, argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-f')
 parser.add_argument('-it', type = int, default = 1)
+parser.add_argument('-p', type = float, default = 1.0)
 args = parser.parse_args()
 filename = args.f
 iterations = args.it
+period = args.p
 for i in range(iterations):
     alpha = np.rad2deg(np.arccos(np.random.uniform()))  # inclination angle in degrees
     beta = np.random.uniform(-20, 20)                   # impact parameter in degrees
-    P = np.random.uniform(0.15, 1.5)                    # Period in seconds
+#    P = np.random.uniform(0.15, 1.5)                    # Period in seconds
+    P = period
     fmin = 0.065                                        # minimum frequency in GHz
     bw = 0.01                                           # channel bandwidth in GHz
     nch = 10                                            # Number of channels

@@ -178,8 +178,10 @@ def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
     # Find the delta phase shift between the min and max frequency profile:
     phase_at_peak0 = phase[phase_bin0] # peak at reference profile (/max freq)
     phase_at_peak1 = phase[phase_bin1]
-    delta_phase = phase_at_peak1 - phase_at_peak0
-
+    if phase_bin0==phase_bin1:
+        delta_phase = phase[10]
+    else:
+        delta_phase = phase_at_peak1 - phase_at_peak0
     # Convert the phase to time and find a corresponding delta_dm:
     delta_t = delta_phase/360. * P
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
