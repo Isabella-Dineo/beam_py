@@ -326,19 +326,22 @@ parser.add_argument('-snr', metavar="<snr>", type=float, default=10000, help='si
 parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc.')
 parser.add_argument('-scatter', metavar="<0/1>", default=None, help='include scattering.')
 parser.add_argument('-out', metavar="<outFile>", type=str, default="outFile", help='output file name.')
-
+parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 args = parser.parse_args()
 dm = args.dm
 iseed = args.iseed
 scr = args.scatter
 snr = args.snr
 outFile = args.out
-
+pulsarParamsFile = args.outfile
+pickleFile = pulsarParamsFile+'_p'
+pickleFile2 = pulsarParamsFile+'_p2'
 #======================================================
 #    1. Load the files containing the profile and beam:
 #======================================================
 
-prof_file = open('prof_data.txt', 'rb')
+#prof_file = open('prof_data.txt', 'rb')
+prof_file = open(pickleFile, 'rb')
 #profDict = pickle.load(prof_file)
 #prof = profDict['prof']
 #phase = profDict['phase']
@@ -348,7 +351,7 @@ phase = pickle.load(prof_file)
 beam = pickle.load(prof_file)
 prof_file.close()
 
-params_file = open('params_file.txt', 'rb')
+params_file = open(pickleFile2, 'rb')
 freq = pickle.load(params_file)
 P = pickle.load(params_file)
 iseed = pickle.load(params_file)
@@ -447,7 +450,7 @@ for dm_id in range(len(dm_range)):
 for i in range(len(peaks_of_average)):
     if peaks_of_average[i] == np.max(peaks_of_average):
        best_dm = dm_range[i]
-f = open('bestDM.dat', 'a')
+f = open(pulsarParamsFile, 'a')
 f.write(str(best_dm) + '\n')
 f.close()
        #print "Best dm = " +  str(best_dm) + " pc cm^-3 " 

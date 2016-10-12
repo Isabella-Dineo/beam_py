@@ -805,7 +805,7 @@ parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
 parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc (default = 1)')
-#parser.add_argument('-o','--outfile', metavar="<name_suffix>", dest='output', action='store', type=argparse.FileType('w'), help="Write to file.")
+parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 parser.add_argument('-do_ab', default=None, help='include aberration ofset (default = None)')
 parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
 #parser.add_argument('-d', metavar="<dir>", default='/home/', help='Directory to save plots.')
@@ -828,6 +828,9 @@ nch = args.nch
 min_freq = args.min_freq
 chbw = args.chbw
 scr = args.scatter
+pulsarParamsFile = args.outfile
+pickleFile = pulsarParamsFile+'_p'
+pickleFile2 = pulsarParamsFile+'_p2'
 #output = args.output
 #plotwindow = args.x11
 #dir = args.dir
@@ -868,7 +871,8 @@ for i in np.arange(len(freq)):
 #2.1 Write out the profile into a file:
 #=======================================
 # pickle "prof" using protocol 0 (ASCII)
-outfile = open('prof_data.txt', 'wb')
+#outfile = open('prof_data.txt', 'wb')
+outfile = open(pickleFile, 'wb')
 #pickle.dump({'prof':prof, 'phase':phase, 'beam':beam}, outfile)
 pickle.dump(prof, outfile)
 pickle.dump(phase, outfile)
@@ -876,18 +880,17 @@ pickle.dump(beam, outfile)
 outfile.close()
 
 pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1]])
-f = open('pulsarParams.txt', 'a')
-f.write(' '.join([str(item) for item in pulsarParams]) + '\n')
+f = open(pulsarParamsFile, 'a')
+f.write(' '.join([str(item) for item in pulsarParams]) + ' ')
 f.close()
-
-params = open('params_file.txt', 'wb')
+#params = open('params_file.txt', 'wb')
+params = open(pickleFile2, 'wb')
 pickle.dump(freq, params)
 pickle.dump(P, params)
 pickle.dump(iseed, params)
 pickle.dump(res, params)
 pickle.dump(t_res, params)
 params.close()
-
 #========================================
 #     3. plot the LOS beam:
 #========================================
@@ -931,6 +934,7 @@ else:
     print "noise rms: %.4f" %rms
     profile = add_noise(sc_prof, rms, iseed, res) 
 
+'''
 #=======================================================
 #      6. Fit a DM Curve:
 #=======================================================
@@ -1028,7 +1032,7 @@ for snr_id, snr_val in enumerate(SNR):
 #plt.subplot(1, 2, 2)
 #plt.title("average_shifted - average_unshifted")
 #plt.plot(phase, diff)
-
+'''
 #===========================================
 # SET A ZERO BASELINE AND PLOT THE PROFILE:
 #===========================================
