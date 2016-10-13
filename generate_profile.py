@@ -177,6 +177,7 @@ def height_f(H, freq):
 
     #H_mu = 0.6*H * (freq)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
     H_mu = H * (9 * freq**(-0.95) + 41)/(9 + 41) 
+    print 'heights:', H_mu
     #H_mu = 0.4 * H * freq**(-0.95) + 0.2*H
     return H_mu
 #====================================================================================================================================================
@@ -247,23 +248,32 @@ def patch_center(P, heights, npatch):
     
 #   opening angle:    
     opa = rho(P, heights) 
-    
+    print 'opa:' , opa
 #   initialize the array:
     centerx = []
     centery = []
     np.random.seed(iseed)
-    npatch = np.random.randint(2,10+1)
-    
-    for comp in opa: #for each emission height (comp!)
+    #npatch = np.random.randint(2,10+1)
+    if fanBeam == None:
+        theta = 2 * np.pi * np.random.random(len(heights) * npatch)
+    else:
+        theta = 2 * np.pi * np.random.random(npatch)
+    print 'theta:', np.shape(theta)
+    for j in range(len(heights)): #for each emission height (comp!)
 #       find the center of the patch
         tempCenterX = []
         tempCenterY = []
-        theta = 2 * np.pi * np.random.random(npatch)
-
-        for i in np.arange(npatch):
-            tempCenterX.append(comp * np.sin(theta[i]))
-            tempCenterY.append(comp * np.cos(theta[i]))
+        
+        if fanBeam == None:
+            for i in np.arange(npatch):
+                tempCenterX.append(opa[j] * np.sin(theta[j*npatch + i]))
+                tempCenterY.append(opa[j] * np.cos(theta[j*npatch + i]))
                 
+        else:
+            for i in np.arange(npatch):
+                tempCenterX.append(opa[j] * np.sin(theta[i]))
+                tempCenterY.append(opa[j] * np.cos(theta[i]))
+
 
         centerx.append(tempCenterX)
         centery.append(tempCenterY)
@@ -808,6 +818,7 @@ parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersi
 parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 parser.add_argument('-do_ab', default=None, help='include aberration ofset (default = None)')
 parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
+parser.add_argument('-doFan', default=None, help='Fan beam - default: patchy beam')
 #parser.add_argument('-d', metavar="<dir>", default='/home/', help='Directory to save plots.')
 #parser.add_argument('-x', "--x11", action='store_true', help='X11 window plot override switch.')
 
@@ -831,6 +842,7 @@ scr = args.scatter
 pulsarParamsFile = args.outfile
 pickleFile = pulsarParamsFile+'_p'
 pickleFile2 = pulsarParamsFile+'_p2'
+fanBeam = args.doFan
 #output = args.output
 #plotwindow = args.x11
 #dir = args.dir
@@ -931,7 +943,7 @@ if snr == None:
     profile = sc_prof
 else:
     rms = noise_rms(snr, np.max(peaks)) 
-    print "noise rms: %.4f" %rms
+    #print "noise rms: %.4f" %rms
     profile = add_noise(sc_prof, rms, iseed, res) 
 
 '''
@@ -1051,21 +1063,21 @@ for k in np.arange(len(profile)):
 meanBeam = np.mean(beam, axis=0)
 xlos, ylos, thetalos = los(alpha, beta, res)
 #for i in range(len(beam)):
-#plt.figure(figsize=(10,5))
-#plt.subplot(1, 2, 1)
-#plt.plot(xlos, ylos, '--r')
-#plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
+plt.figure(figsize=(10,5))
+plt.subplot(1, 2, 1)
+plt.plot(xlos, ylos, '--r')
+plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
 #for i in range(len(beam)):
 #    plt.imshow(beam[i], extent=[-180, 180, -180, 180])
 #plt.imshow(beam[0], extent=[-180, 180, -180, 180])
 #plt.title('Patchy emission' )
 #plt.xlabel('X (degrees)')
 #plt.ylabel('Y (degress)')
-#plt.colorbar()
-#plt.subplot(1, 2, 2)
-##plt.plot(phase, averageP[0]) # average profile using first DM?
-#plt.plot(phase, profile[0]) # average profile using first DM?
-#plt.xlim(-180, 180)#lt.title('Profile at freq = %.4f GHz' % freq[-1])
+plt.colorbar()
+plt.subplot(1, 2, 2)
+#plt.plot(phase, averageP[0]) # average profile using first DM?
+plt.plot(phase, profile[0]) # average profile using first DM?
+plt.xlim(-180, 180)#lt.title('Profile at freq = %.4f GHz' % freq[-1])
 
 
 #==========================================
@@ -1119,3 +1131,4 @@ xlos, ylos, thetalos = los(alpha, beta, res)
 #    b,p = dm_trial(prof[n])
 #    print "peaks", p
 #    print "bin", b
+plt.show()
