@@ -83,7 +83,7 @@ def mapphi(alpha, beta, phi):
 
     yp = -R * np.cos(gamma)
  
-    return np.rad2deg(xp), np.rad2deg(yp)
+    return np.rad2deg(xp)[::-1], np.rad2deg(yp)[::-1] #clockwise los
 #====================================================================================================================================================
 #							LINE OF SIGHT
 #====================================================================================================================================================
@@ -177,7 +177,7 @@ def height_f(H, freq):
 
     #H_mu = 0.6*H * (freq)**(-gamma) + 0.4*H # frequency dependence on height (KJ07 eqn.4/beam code)
     H_mu = H * (9 * freq**(-0.95) + 41)/(9 + 41) 
-    print 'heights:', H_mu
+#    print 'heights:', H_mu
     #H_mu = 0.4 * H * freq**(-0.95) + 0.2*H
     return H_mu
 #====================================================================================================================================================
@@ -248,7 +248,7 @@ def patch_center(P, heights, npatch):
     
 #   opening angle:    
     opa = rho(P, heights) 
-    print 'opa:' , opa
+#    print 'opa:' , opa
 #   initialize the array:
     centerx = []
     centery = []
@@ -258,7 +258,7 @@ def patch_center(P, heights, npatch):
         theta = 2 * np.pi * np.random.random(len(heights) * npatch)
     else:
         theta = 2 * np.pi * np.random.random(npatch)
-    print 'theta:', np.shape(theta)
+#    print 'theta:', np.shape(theta)
     for j in range(len(heights)): #for each emission height (comp!)
 #       find the center of the patch
         tempCenterX = []
@@ -599,6 +599,8 @@ def find_peak(prof):
 
 def find_width(profile):
     peak = find_peak(profile)
+    left = 0
+    right = 0
     for i in range(len(profile)):
         if profile[i] > 0.1 * peak:
             left = i
@@ -616,7 +618,7 @@ def find_width(profile):
 def noise_rms(snr, peak):
     """Function to determine the noise level given a signal to noise
        and the peak of the profile. Detemines the rms that will give maximum
-       signal to noise
+       signal to noise. Assumes 0 baseline.
        
        Args:
        -----
@@ -628,7 +630,7 @@ def noise_rms(snr, peak):
        rms   : noise rms
     """
     
-    rms = np.sqrt(peak**2 / snr)
+    rms = peak / snr
 
     return rms
 
@@ -678,8 +680,14 @@ def add_noise(prof, rms, iseed, res):
     """
     peak = find_peak(prof)
     noise = np.random.normal(0, rms, res)
-    noisy_prof = prof + noise
-    
+    noisy_prof = np.asarray(prof).T
+    for i in range(np.shape(prof)[0]):
+        noisy_prof[:,i] += noise
+    '''
+    plt.plot(noisy_prof)
+    plt.show()
+    '''
+    noisy_prof = noisy_prof.T
     return noisy_prof
 
 #====================================================================================================================================================
@@ -723,7 +731,7 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
       
 #   An arbitrary peak of the profile:
     #peak = 10. 
-    peakAmp = 10.   
+    peakAmp = 1.   
 #   Get the line of sight:
     xlos, ylos, thetalos = los(alpha, beta, res)
 
@@ -745,17 +753,38 @@ def plotpatch(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab):
         
 #       2D patch (including aberation):
         for pc in zip(patchCenterX, patchCenterY):
+            #if distance of current box from the patch center is
+            #larger than 3 times the patchwidth, I do not want any
+            #power contributed
+            # first compute a grid of distance from the center of the patch, in units of the width
+#            print "Patches: ", pc[0], pc[1], sigmax
+            distance = (np.sqrt((X - pc[0])**2 + (Y - pc[1])**2))/sigmax
+            distance[np.where(distance > 3.0)] = 0.0
+            distance[np.where(distance != 0.0)] = peakAmp
             if do_ab == None:
-                Z += peakAmp * np.exp(-((X - pc[0])**2 / (2 * sigmax**2) + (Y - pc[1])**2 / (2 * sigmay**2)))
+                Z += distance * np.exp(-((X - pc[0])**2 / (2 * sigmax**2) + (Y - pc[1])**2 / (2 * sigmay**2)))
             else:
-                Z += peakAmp * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
+                Z += distance * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
             
 #   1D profile from 2D patch, closest to the line of sight (select nearest neighbors):
     
-    ZxIdx = np.array(xlos/dx, dtype=int) - int(res/2) # x index
-    ZyIdx = np.array(ylos/dy, dtype=int) - int(res/2) # y index
+    ZxIdx = np.array((xlos-xmin)/dx, dtype=int) # x index
+    ZyIdx = np.array((ylos-ymin)/dy, dtype=int) # y index
     prof = Z[ZxIdx, ZyIdx]
 
+    '''
+    plt.plot((xlos-xmin)/dx,'k-')
+    plt.plot((ylos-ymin)/dy,'r-')
+    plt.plot((xlos-xmin)/dx,(ylos-ymin)/dy,'r-')
+    plt.plot((np.asarray(patchCenterX)-xmin)/dx,(np.asarray(patchCenterY)-ymin)/dy,'k+')
+    plt.plot(ZxIdx, 'k-')
+    plt.plot(ZyIdx, 'r-')
+    plt.imshow(Z.T)
+    plt.colorbar()
+    plt.plot((xlos-xmin)/dx,(ylos-ymin)/dy)
+    plt.plot(ZxIdx,ZyIdx,'r+')
+    plt.plot(500,513,'b*')
+    '''
 #   Scattering:
 #    tau = sc_time(freq, dm, iseed)
 #    bf = broadening(tau, P, res)
@@ -1051,7 +1080,7 @@ for snr_id, snr_val in enumerate(SNR):
 fig = plt.figure()
 for k in np.arange(len(profile)):
     prof_num = np.arange(1, len(profile) + 1)
-    profile[k] -= np.min(profile[k])
+#    profile[k] -= np.min(profile[k])
     plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
 #plt.title('A sequence of %i pulse profile' %nch)
 #plt.xlabel('phase (degrees)')
@@ -1065,8 +1094,23 @@ xlos, ylos, thetalos = los(alpha, beta, res)
 #for i in range(len(beam)):
 plt.figure(figsize=(10,5))
 plt.subplot(1, 2, 1)
-plt.plot(xlos, ylos, '--r')
-plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
+plt.plot(xlos, ylos, '+r')
+#plt.imshow(beam[0], extent=[-np.amax(beam[0]),np.amax(beam[0]),-np.amax(beam[0]),np.amax(beam[0])])#, cmap=cm.gray)
+# find zoomed extent for plot
+nonZero = np.where(beam[0]!= 0.0)
+nzx_min = np.min(np.amin(nonZero,0))
+nzy_min = np.min(np.amin(nonZero,1))
+nzx_max = np.max(np.amax(nonZero,0))    
+nzy_max = np.max(np.amax(nonZero,1))    
+print nzx_min,nzx_max, nzy_min, nzy_max
+x1 = phase[nzx_min]
+x2 = phase[nzx_max]
+y1 = phase[nzy_min]
+y2 = phase[nzy_max]
+plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
+plt.xlim(x1,x2)
+plt.ylim(y1,y2)
+
 #for i in range(len(beam)):
 #    plt.imshow(beam[i], extent=[-180, 180, -180, 180])
 #plt.imshow(beam[0], extent=[-180, 180, -180, 180])
