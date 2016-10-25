@@ -327,7 +327,6 @@ def add_noise(prof, rms, iseed, res):
 #                                              INITIALIZE PARAMETERS FROM THE COMMAND LINE:
 #====================================================================================================================================================================
 parser = argparse.ArgumentParser(description='Find excess DM due to profile evolution with frequency. Uses the files produced when running gen_profile.py.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator.')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=10000, help='signal to noise ratio.')
 parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc.')
 parser.add_argument('-scatter', metavar="<0/1>", default=None, help='include scattering.')
@@ -335,7 +334,6 @@ parser.add_argument('-out', metavar="<outFile>", type=str, default="outFile", he
 parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 args = parser.parse_args()
 dm = args.dm
-iseed = args.iseed
 scr = args.scatter
 snr = args.snr
 outFile = args.out
