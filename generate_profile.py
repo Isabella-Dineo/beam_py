@@ -1092,6 +1092,7 @@ for k in np.arange(len(profile)):
 meanBeam = np.mean(beam, axis=0)
 xlos, ylos, thetalos = los(alpha, beta, res)
 #for i in range(len(beam)):
+'''
 plt.figure(figsize=(10,5))
 plt.subplot(1, 2, 1)
 plt.plot(xlos, ylos, '+r')
@@ -1122,7 +1123,7 @@ plt.subplot(1, 2, 2)
 #plt.plot(phase, averageP[0]) # average profile using first DM?
 plt.plot(phase, profile[0]) # average profile using first DM?
 plt.xlim(-180, 180)#lt.title('Profile at freq = %.4f GHz' % freq[-1])
-
+'''
 
 #==========================================
 #   Scatter the profile:
@@ -1175,4 +1176,4 @@ plt.xlim(-180, 180)#lt.title('Profile at freq = %.4f GHz' % freq[-1])
 #    b,p = dm_trial(prof[n])
 #    print "peaks", p
 #    print "bin", b
-plt.show()
+#plt.show()
