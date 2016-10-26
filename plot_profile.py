@@ -10,126 +10,6 @@ import os, sys, time
 #======================================================
 #    DEFINE FUNCTIONS NEEDED:
 #======================================================
-#====================================================================================================================================================
-#                                                       SCATTERING TIME:
-#====================================================================================================================================================
-def sc_time(freq, dm, iseed):
-    """Function to determine the scattering time scale as in Bhat et al. (2004).
-               
-       Args:
-       -----
-       freq   :   frequency (in GHz) 
-       dm     :   dispersion measure (pc cm^-3)
-    
-       Return:
-       -------
-       tau     :   the scattering time (in sec)
-       
-    """
-#   tau = scattering time scale as in Bhat et al. (2004)
-    np.random.seed(iseed)
-    log_tau = -6.46 + 0.154 * np.log10(dm) + 1.07 * (np.log10(dm))**2 - 3.86 * np.log10(freq) +  np.random.uniform(-1,1) # scattering time with added noise term
-    tau = 10**log_tau / 1e3 # (time scale in seconds)
-
-    return tau
-
-
-def pulsetrain(npulses, numberofbins, prof):
-    """Function to create a train of pulses given a single pulse profile.
-
-       Args:
-       -----
-       npulses        : number of pulses
-       numberofbins   : number of bins (res; def = 1e3)
-       prof           : pulse profile
-
-       Return:
-       -------
-       train          : a train of pulse profiles (size = size(profile)*npulses)
-    """
-
-    binsrange = np.linspace(1, numberofbins, num=numberofbins, endpoint=True)
-    nbins = np.max(binsrange)
-    train = np.zeros(npulses * int(nbins))
-    for i in range(npulses):
-        startbin = i * nbins
-        train[startbin:startbin + nbins] = prof
-
-    return train
-
-
-def extractpulse(sc_train, pulsesfromend, binsperpulse):
-    """Function that takes the output convolution
-       
-       Args:
-       -----
-       sc_train     : a scattered train of pulse profiles 
-       pulsefromend : number position of pulse to extract (from the last pulse)
-       binsperpulse : number of bins per pulse
-
-       Returns:
-       --------
-       pulse        : a single pulse profile
-    """
-
-    if pulsesfromend == 0:
-        start = 0
-        end = binsperpulse
-        #zerobpulse = train[start:int(end)] - np.min(train[start:int(end)])
-        #rectangle = np.min(train[start:int(end)])*binsperpulse
-        #flux = np.sum(train[start:int(end)]) - rectangle
-
-    else:
-        start = -pulsesfromend*binsperpulse
-        end = start + binsperpulse
-        #zerobpulse = train[start:int(end)]-np.min(train[start:int(end)])
-        #rectangle = np.min(train[start:inte(end)])*binsperpulse
-        #flux = np.sum(train[start:int(end)]) - rectangle
-
-    pulse = sc_train[int(start):int(end)]
-
-    return pulse
-
-
-def broadening(tau, P, res):
-    """Function to determine the broadening function of the profile due to scattering.
-       
-       Args:
-       -----
-       tau         : scattering time (in seconds)
-       P           : period (in seconds)
-
-       Return:
-       -------
-       broad_func  : broadening function
-    """
-    t = np.linspace(0, P, num=res, endpoint=True)
-    broad_func = 1/tau * np.exp(-(t / tau))
-    #print "tau" + str(tau)
-    return broad_func
-
-
-def scatter(train, bf):
-    """Function to scatter a pulse profile / a train of pulse profiles. Returns a convolution of the profile with the scattering function.
-
-       Args:
-       -----
-       pulse   : pulse profile (extracted from a function extractpulse())
-       bf      : broadening function
-
-       Returns:
-       -------
-       conv    : scattered profile 
-    """
-    conv = np.convolve(train, bf)
-    # normalise the profile:
-    profint = np.sum(train) # integral / area of the profile 
-    convint = np.sum(conv) # integral / area of the scattered profile
-    sc_prof = conv * (profint / convint)
-    out = sc_prof[0 : len(train) + 1]
-
-    return out
-
 
 #====================================================================================================================================================
 #                                                       DM CURVE:
@@ -253,76 +133,6 @@ def find_peak(prof):
     return peak
 
 
-#====================================================================================================================================================
-#                                                       ADD NOISE:
-#====================================================================================================================================================
-def noise_rms(snr, peak):
-    """Function to determine the noise level given a signal to noise
-       and the peak of the profile. Detemines the rms that will give maximum
-       signal to noise
-       
-       Args:
-       -----
-       snr   : signal to noise ratio 
-       peak  : peak of the profile
-
-       Return:
-       -------
-       rms   : noise rms
-    """
-
-    rms = peak / snr
-
-    return rms
-
-
-def signal_to_noise(peak, rms):
-    """Function to determine signal to noise ratio for each profile.
-       Uses the previously determined noise level from function 
-       "noise_rms" to determine the signal to noise ratio for a number 
-       of profiles.
-
-       Args:
-       ---- 
-       peak   : peak of the profile
-       rms    : noise rms 
-
-       Return:
-       -------
-       snr    : signal to noise of each profile
-    """
-    snr = (peak / rms )
-
-    return snr
-
-
-def add_noise(prof, rms, iseed, res):
-    """Function that add noise to a profile. Finds a signal to noise of 
-       a profile and determine the noise level to add for that specific
-       profile. Adds a gaussian noise to a profile using a fixed noise
-       rms, assuming a normalised profile.
-
-       NB: If 'prof' is the scattered profile from scatterering function
-       'scatter()', then the profile is normalised!
-
-       Args:
-       -----
-       prof       : pulse profile
-       rms        : noise rms
-       iseed      : seed for random number generator 
-       
-       Returns:
-       --------
-       noisy_prof : a profile with added noise
-
-    """
-    peak = find_peak(prof)
-    noise = np.random.normal(0, rms, res)
-    noisy_prof = prof + noise
-
-    return noisy_prof
-
-
 #====================================================================================================================================================================
 #                                              INITIALIZE PARAMETERS FROM THE COMMAND LINE:
 #====================================================================================================================================================================
@@ -339,15 +149,15 @@ iseed = args.iseed
 scr = args.scatter
 snr = args.snr
 outFile = args.out
-pulsarParamsFile = args.outfile
-pickleFile = pulsarParamsFile+'_p'
-pickleFile2 = pulsarParamsFile+'_p2'
+fileName =  args.outfile
+beamFile = fileName+'_profiles'
+paramsFile = fileName+'_params'
 #======================================================
 #    1. Load the files containing the profile and beam:
 #======================================================
 
 #prof_file = open('prof_data.txt', 'rb')
-prof_file = open(pickleFile, 'rb')
+prof_file = open(beamFile, 'rb')
 #profDict = pickle.load(prof_file)
 #prof = profDict['prof']
 #phase = profDict['phase']
@@ -357,7 +167,7 @@ phase = pickle.load(prof_file)
 beam = pickle.load(prof_file)
 prof_file.close()
 
-params_file = open(pickleFile2, 'rb')
+params_file = open(paramsFile, 'rb')
 freq = pickle.load(params_file)
 P = pickle.load(params_file)
 iseed = pickle.load(params_file)
@@ -367,38 +177,6 @@ params_file.close()
 
 nch = len(prof)
 
-#======================================================
-#     2. Scatter the line of sight profile: 
-#======================================================
-train = []
-bf = []
-tau = sc_time(freq, dm, iseed)
-if scr == None:
-    sc_prof = prof # profile without scattering
-
-else:
-    sc_prof = []
-    for pid in range(nch):
-        train.append(pulsetrain(3, res, prof[pid]))
-
-    for fid in range(nch):
-        tau = sc_time(freq[fid], dm, iseed)
-        bf = broadening(tau, P, res)
-        sc_train = scatter(train[fid], bf)
-        sc_prof.append(extractpulse(sc_train, 2, res))
-
-#======================================================
-#     3. Add noise to the scattered profile:
-#======================================================
-peaks = []
-for j in range(nch):
-    peaks.append(find_peak(sc_prof[j]))
-
-if snr == None:
-    profile = sc_prof
-else:
-    rms = noise_rms(snr, np.max(peaks))
-    profile = add_noise(sc_prof, rms, iseed, res)
 
 #======================================================
 #      4. Fit a DM Curve:
@@ -412,7 +190,6 @@ dm_range = find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1
 
 # Create a directory to save the files.
 #date = time.strftime("%Y-%m-%d")
-date = time.ctime(time.time())
 #newDir = os.mkdir(date)
 #prevDir = os.getcwd()
 #os.chdir(str(prevDir)/str(newDir))
@@ -435,31 +212,6 @@ for dm_id in range(len(dm_range)):
         #plt.plot(phase, shifted_profile[freq_id])
     average_profile.append(avg_prof(shifted_profile))
     peaks_of_average.append(find_peak(average_profile[dm_id]))
-    #print "SNR vs DM: ", peaks_of_average[-1], dm_range[dm_id]
-    #fig.savefig(outFile+'_'+str(time.time())+'.png')
-'''
-fig2 = plt.figure()
-plt.plot(dm_range, peaks_of_average)
-fig2.savefig('diagnosticSNR_DM.png')
-'''
-# Make an animation of the files to see the dm_shift.
-#os.system("convert -delay 50 -loop 0 outFile*.png animation.gif")
-
-#print "I------------------------------------------------------------I"
-#print "I                 EXCESS DM                                  I"
-#print "I------------------------------------------------------------I"
-#print "Dm range in bins = " + str(dm_range/P * 360)
-#print "Profile at minimum frequency will be shifted w.r.t profile at maximum frequency in " + str(delay(freq[nch - 1], freq[0], dm_range[0], t_res)/P * 360) + " bins"
-#plt.figure()
-#plt.grid()
-#plt.xlim(-180, 180)
-#plt.title("average profile")
-#plt.xlabel("phase (degrees)")
-#lt.ylabel("Intensity")
-#peaks_of_average = []
-#for i in np.arange(len(average_profile)):
-#    plt.plot(phase, average_profile[i])
-#    peaks_of_average.append(find_peak(average_profile[i]))
 
 for i in range(len(peaks_of_average)):
     if peaks_of_average[i] == np.max(peaks_of_average):
@@ -467,21 +219,6 @@ for i in range(len(peaks_of_average)):
 f = open(pulsarParamsFile, 'a')
 f.write(str(best_dm) + '\n')
 f.close()
-       #print "Best dm = " +  str(best_dm) + " pc cm^-3 " 
-       #print "Best average profile at index " + str(i)
-       #print "Highest peak of average profile " + str(peaks_of_average[i])    
-       #print "\n"
-       #print "I-----------------------------------------------------------------I"
-       #plt.plot(phase, average_profile[i])
-       #plt.show()
-#shifted_with_best_dm = shifted_profile[450:500]
-#print shifted_with_best_dm
-#plt.figure()
-#plt.xlim(-180,180)
-#plt.title("Shifted profile with excess dm = %.5f pc cm^-3" %best_dm)
-#for i in np.arange(len(shifted_with_best_dm)):
-#    plt.plot(phase, shifted_with_best_dm)
-
 
 #======================================================
 #      5. Plot and visualise the data:
