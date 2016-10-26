@@ -227,6 +227,7 @@ pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, best_dm])
 f = open(fileName, 'a')
 f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
+'''
 #==================================================================
 #                     PRODUCE PLOTS:
 #==================================================================
@@ -270,3 +271,4 @@ plt.plot(phase, profile[0])
 plt.xlim(-180, 180)
 plt.xlabel('Phase (degrees)')
 plt.show()
+'''
