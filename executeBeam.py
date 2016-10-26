@@ -26,8 +26,6 @@ for i in range(iterations):
     beta = np.random.uniform(-20, 20)
     nc = 4
     npatch = 4
-    os.system('generate_profile.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d -snr %f -iseed %d -outfile %s' \
+    os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d -snr %f -iseed %d -outfile %s' \
                % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename ))
-
-    os.system('plot_profile.py -outfile %s' % filename)
 
