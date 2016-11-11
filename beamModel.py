@@ -495,7 +495,8 @@ def find_width(prof):
 #====================================================================================================================================================
 #                                                               ADD NOISE:
 #====================================================================================================================================================
-def noise_rms(snr, peak):
+def noise_rms(snr):
+    #noise_rms(snr, peak):
     """Function to determine the noise level given a signal to noise
        and the peak of the profile. Detemines the rms that will give maximum
        signal to noise. Assumes 0 baseline.
@@ -509,16 +510,46 @@ def noise_rms(snr, peak):
        -------
        rms   : noise rms
     """
-
-    rms = peak / snr
-
+    # assumes the beam is normalized such that the LOS cut at center produce a beam (2d gaussian with max amplitude 1)
+    # The peak of the profile = 10 times    
+    #rms = peak / snr
+    rms = 10/snr  
+    
     return rms
+
+def add_noise(prof, rms, res):
+    """Function that add noise to a profile. Finds a signal to noise of 
+       a profile and determine the noise level to add for that specific
+       profile. Adds a gaussian noise to a profile using a fixed noise
+       rms, assuming a normalised profile.
+
+       NB: If 'prof' is the scattered profile from scatterering function
+       'scatter()', then the profile is normalised!
+
+       Args:
+       -----
+       prof       : pulse profile
+       rms        : noise rms
+       
+       Returns:
+       --------
+       noisy_prof : a profile with added noise
+
+    """
+    peak = find_peak(prof)
+    noise = np.random.normal(0, rms, int(res))
+    noisy_prof = np.asarray(prof).T
+    for i in range(np.shape(prof)[0]):
+        noisy_prof[:,i] += noise
+    noisy_prof = noisy_prof.T
+    return noisy_prof
+
 
 def signal_to_noise(peak, rms):
     """Function to determine signal to noise ratio for each profile.
        Uses the previously determined noise level from function 
-       "noise_rms" to determine the signal to noise ratio for a number 
-       of profiles.
+       'noise_rms' to determine the signal to noise ratio for each 
+       profile.
 
        Args:
        ---- 
@@ -532,40 +563,11 @@ def signal_to_noise(peak, rms):
     snr = (peak / rms )
 
     return snr
-
-def add_noise(prof, rms, iseed, res):
-    """Function that add noise to a profile. Finds a signal to noise of 
-       a profile and determine the noise level to add for that specific
-       profile. Adds a gaussian noise to a profile using a fixed noise
-       rms, assuming a normalised profile.
-
-       NB: If 'prof' is the scattered profile from scatterering function
-       'scatter()', then the profile is normalised!
-
-       Args:
-       -----
-       prof       : pulse profile
-       rms        : noise rms
-       iseed      : seed for random number generator 
-       
-       Returns:
-       --------
-       noisy_prof : a profile with added noise
-
-    """
-    peak = find_peak(prof)
-    noise = np.random.normal(0, rms, res)
-    noisy_prof = np.asarray(prof).T
-    for i in range(np.shape(prof)[0]):
-        noisy_prof[:,i] += noise
-    noisy_prof = noisy_prof.T
-    return noisy_prof
-
 #====================================================================================================================================================
 #                                                       DM CURVE FITTING:
 #====================================================================================================================================================
 def find_phase_bin(prof):
-    """Function to find a bin where the profile peaks.
+    """Function to find a bin closest to the peak of a profile.
        
        Args:
        -----

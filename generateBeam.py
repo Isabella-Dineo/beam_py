@@ -85,12 +85,11 @@ def generateBeam(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab, iseed, f
                 Z += distance * np.exp(-((X - pc[0])**2 / (2 * sigmax**2) + (Y - pc[1])**2 / (2 * sigmay**2)))
             else:
                 Z += distance * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
-
 #   1D profile from 2D patch, closest to the line of sight (select nearest neighbors):
     ZxIdx = np.array((xlos-xmin)/dx, dtype=int) # x index
     ZyIdx = np.array((ylos-ymin)/dy, dtype=int) # y index
     prof = Z[ZxIdx, ZyIdx]
-
+    
     return prof, Z
 
 #===============================================================================================================================================
@@ -117,6 +116,7 @@ parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 parser.add_argument('-do_ab', default=None, help='include aberration ofset (default = None)')
 parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
 parser.add_argument('-doFan', default=None, help='Fan beam - default: patchy beam')
+parser.add_argument('-getPlot', default=None, help='Option plot and save the beam / profiles')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
@@ -144,7 +144,6 @@ fileName = args.outfile
 #=====================
 beam = []
 prof = []
-peaks = []
 w10 = []
 res = 1e3
 t_res = P/res
@@ -162,9 +161,9 @@ H = bm.emission_height(P, ncomp, iseed, hmin, hmax)
 for i in np.arange(len(freq)):
     heights = bm.height_f(H, freq[i]) # frequency dependent H
     pr, Z = generateBeam(P, alpha, beta, freq[i], dm, heights, npatch, snr, do_ab, iseed, fanBeam)
-    w10.append(bm.find_width(pr))
-    prof.append(pr)
-    beam.append(Z)
+    w10.append(bm.find_width(pr)) # Width at 10% of the peak 
+    prof.append(pr)               # Profile for that frequency
+    beam.append(Z)                # 2D beam 
 
 #==========================================
 #     3. Scatter the line of sight profile: 
@@ -173,7 +172,7 @@ train = []
 bf = []
 tau = bm.sc_time(freq, dm, iseed)
 if scr == None:
-    sc_prof = prof # returns the profile without scattering and store that in sc_prof
+    sc_prof = prof # returns the profile without scattering 
 
 else:
     sc_prof = []
@@ -189,86 +188,93 @@ else:
 #===========================================
 #     4. Add noise:
 #===========================================
-for j in np.arange(len(prof)):
-    peaks.append(bm.find_peak(sc_prof[j]))
+# Find amplitudes of the profiles.
+#peaks = []
+#for j in np.arange(len(prof)):
+#    peaks.append(bm.find_peak(sc_prof[j]))
 
+SN = []
 if snr == None:
     profile = sc_prof
 else:
-    rms = bm.noise_rms(snr, np.max(peaks))
-    profile = bm.add_noise(sc_prof, rms, iseed, res)
+    #rms = bm.noise_rms(snr, np.max(peaks))
+    rms = bm.noise_rms(snr)                            # Determine the noise rms
+    profile = bm.add_noise(sc_prof, rms, res)          # add noise to each of the profile
+    for p in profile:
+       SN.append(bm.signal_to_noise(np.max(p), rms))   # snr for each of the profiles
 
-#======================================================
+#==================================================================
 #      5. Fit a DM Curve:
-#======================================================
+#==================================================================
+#if any(SN > 10):
+if all(i > 10 for i in SN):
+    average_profile = []
+    peaks_of_average = []
+    phase_bin0 = bm.find_phase_bin(profile[nch - 1])
+    phase_bin1 = bm.find_phase_bin(profile[0])
+    dm_range = bm.find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
 
-average_profile = []
-peaks_of_average = []
-phase_bin0 = bm.find_phase_bin(profile[nch - 1])
-phase_bin1 = bm.find_phase_bin(profile[0])
-dm_range = bm.find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
+    for dm_id in range(len(dm_range)):
+        shifted_profile = []
+        for freq_id in range(nch-1):
+            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
+            shifted_profile.append(np.roll(profile[freq_id], bin_shift))
+        average_profile.append(bm.avg_prof(shifted_profile))
+        peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
+    
+    for i in range(len(peaks_of_average)):
+        if peaks_of_average[i] == np.max(peaks_of_average):
+            best_dm = dm_range[i]
+    
+    # Write out important parameters into a file    
+    pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, best_dm])
+    f = open(fileName, 'a')
+    f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
-for dm_id in range(len(dm_range)):
-    shifted_profile = []
-    for freq_id in range(nch-1):
-        bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
-        shifted_profile.append(np.roll(profile[freq_id], bin_shift))
-    average_profile.append(bm.avg_prof(shifted_profile))
-    peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
 
-for i in range(len(peaks_of_average)):
-    if peaks_of_average[i] == np.max(peaks_of_average):
-       best_dm = dm_range[i]
-
-#=======================================================
-#    6. Write out the important parames to a file:
-#=======================================================
-pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, best_dm])
-f = open(fileName, 'a')
-f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
-
-'''
 #==================================================================
 #                     PRODUCE PLOTS:
 #==================================================================
+if args.getPlot != None: 
 #===========================================
 # 1. SET A ZERO BASELINE AND PLOT THE PROFILE:
 #===========================================
-fig = plt.figure()
-for k in np.arange(len(profile)):
-    plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
-plt.title('A sequence of %i pulse profile' %nch)
-plt.xlabel('phase (degrees)')
-plt.xlim(-180,180)
-plt.grid()
+    fig = plt.figure()
+    for k in np.arange(len(profile)):
+        plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
+	plt.title('A sequence of %i pulse profile' %nch)
+	plt.xlabel('phase (degrees)')
+	plt.xlim(-180,180)
+	plt.grid()
 
-#============================================
-#    2D emission region:
-#============================================
-meanBeam = np.mean(beam, axis=0)
-xlos, ylos, thetalos = bm.los(alpha, beta, res)
-plt.figure(figsize=(10,5))
-plt.subplot(1, 2, 1)
-plt.plot(xlos, ylos, '+r')
-plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
-plt.xlabel('X (degrees)')
-plt.ylabel('Y (degrees)')
-# find zoomed extent for plot
-nonZero = np.where(beam[0]!= 0.0)
-nzx_min = np.min(np.amin(nonZero,0))
-nzy_min = np.min(np.amin(nonZero,1))
-nzx_max = np.max(np.amax(nonZero,0))
-nzy_max = np.max(np.amax(nonZero,1))
-x1 = phase[nzx_min]
-x2 = phase[nzx_max]
-y1 = phase[nzy_min]
-y2 = phase[nzy_max]
-plt.xlim(x1,x2)
-plt.ylim(y1,y2)
-plt.colorbar()
-plt.subplot(1, 2, 2)
-plt.plot(phase, profile[0])
-plt.xlim(-180, 180)
-plt.xlabel('Phase (degrees)')
-plt.show()
-'''
+    #============================================
+    #    2D emission region:
+    #============================================
+    meanBeam = np.mean(beam, axis=0)
+    xlos, ylos, thetalos = bm.los(alpha, beta, res)
+    plt.figure(figsize=(10,5))
+    plt.subplot(1, 2, 1)
+    plt.plot(xlos, ylos, '+r')
+    plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
+    plt.xlabel('X (degrees)')
+    plt.title('Beam')
+    plt.ylabel('Y (degrees)')
+    # find zoomed extent for plot
+    nonZero = np.where(beam[0]!= 0.0)
+    nzx_min = np.min(np.amin(nonZero,0))
+    nzy_min = np.min(np.amin(nonZero,1))
+    nzx_max = np.max(np.amax(nonZero,0))
+    nzy_max = np.max(np.amax(nonZero,1))
+    x1 = phase[nzx_min]
+    x2 = phase[nzx_max]
+    y1 = phase[nzy_min]
+    y2 = phase[nzy_max]
+    plt.xlim(x1,x2)
+    plt.ylim(y1,y2)
+    plt.colorbar()
+    plt.subplot(1, 2, 2)
+    plt.plot(phase, profile[0])
+    plt.title('Profile at %.3f MHz' % freq[0])
+    plt.xlim(-180, 180)
+    plt.xlabel('Phase (degrees)')
+    plt.show()
