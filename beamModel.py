@@ -266,7 +266,6 @@ def patch_center(P, heights, npatch, iseed, fanBeam):
 
         centerx.append(tempCenterX)
         centery.append(tempCenterY)
-
     return centerx, centery
 
 #====================================================================================================================================================

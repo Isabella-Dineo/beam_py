@@ -9,6 +9,7 @@ import beamModel as bm
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
@@ -115,7 +116,7 @@ parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersi
 parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 parser.add_argument('-do_ab', default=None, help='include aberration ofset (default = None)')
 parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
-parser.add_argument('-doFan', default=None, help='Fan beam - default: patchy beam')
+parser.add_argument('-doFan', default=None, type=str, help='Fan beam - default: patchy beam')
 parser.add_argument('-getPlot', default=None, help='Option plot and save the beam / profiles')
 args = parser.parse_args()
 P = args.p
@@ -239,21 +240,28 @@ if args.getPlot != None:
 #===========================================
 # 1. SET A ZERO BASELINE AND PLOT THE PROFILE:
 #===========================================
-    fig = plt.figure()
+    fig, ax = plt.subplots()
     for k in np.arange(len(profile)):
-        plt.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
+        colormap = plt.cm.gist_ncar
+        #plt.gca().set_color_cycle([colormap(k+1)])
+        ax.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
 	plt.title('A sequence of %i pulse profile' %nch)
 	plt.xlabel('phase (degrees)')
-	plt.xlim(-180,180)
-	plt.grid()
-
+        plt.xlim(-180,180)
+        spacing = 10 
+        minorLocator = MultipleLocator(spacing)
+        ax.yaxis.set_minor_locator(minorLocator)
+        ax.xaxis.set_minor_locator(minorLocator)
+        ax.grid(which='minor')
+        plt.grid('on')
+        
     #============================================
     #    2D emission region:
     #============================================
     meanBeam = np.mean(beam, axis=0)
     xlos, ylos, thetalos = bm.los(alpha, beta, res)
-    plt.figure(figsize=(10,5))
-    plt.subplot(1, 2, 1)
+    fig2 = plt.figure(figsize=(10,5))
+    ax1 = fig2.add_subplot(1,2,1)
     plt.plot(xlos, ylos, '+r')
     plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
     plt.xlabel('X (degrees)')
@@ -272,9 +280,11 @@ if args.getPlot != None:
     plt.xlim(x1,x2)
     plt.ylim(y1,y2)
     plt.colorbar()
-    plt.subplot(1, 2, 2)
+    # 1D plot
+    ax2 = fig2.add_subplot(1,2,2)
     plt.plot(phase, profile[0])
     plt.title('Profile at %.3f MHz' % freq[0])
     plt.xlim(-180, 180)
-    plt.xlabel('Phase (degrees)')
+    plt.xlabel('Phase ')
+    plt.ylabel('Intensity')
     plt.show()
