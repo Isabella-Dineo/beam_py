@@ -12,8 +12,8 @@ parser.add_argument('-min_freq', type=float, default=0.03, help='Start frequency
 parser.add_argument('-bw', type=float, default=0.01, help='Channel bandwidth.')
 parser.add_argument('-snr', type=int, default=100, help='Signal to noise ratio.')
 parser.add_argument('-iseed', type=int, default=None, help='Seed for the random munber generator.')
-#parser.add_argument('-getPlot', type=str, default=None, help='Option to produce the beam plot.')
-parser.add_argument('-doFan', type=str, default=None, help='Option to produce the beam plot.')
+parser.add_argument('-getPlot', type=str, default=None, help='Option to produce the beam plot.')
+#parser.add_argument('-doFan', type=str, default=None, help='Option to produce the beam plot.')
 args = parser.parse_args()
 filename = args.f
 iterations = args.it
@@ -37,5 +37,5 @@ for i in range(iterations):
     nc = 4
     npatch = 4 
     os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d -snr %f \
-               -iseed %d -outfile %s -doFan %s'\
-               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.doFan ))
+               -iseed %d -outfile %s -getPlot %s'\
+               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.getPlot ))

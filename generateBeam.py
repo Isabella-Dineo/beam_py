@@ -217,11 +217,27 @@ if all(i > 10 for i in SN):
 
     for dm_id in range(len(dm_range)):
         shifted_profile = []
+        fig1 = plt.figure(figsize=(10,5))
+        st = fig1.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
+        plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
+        plt.xlabel('phase (degrees)')
+        plt.ylabel('Intensity')
         for freq_id in range(nch-1):
             bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
             shifted_profile.append(np.roll(profile[freq_id], bin_shift))
+            plt.subplot(1,2,1)
+            plt.plot(phase, shifted_profile[freq_id])
+        plt.xlim(-180,180)
+        plt.ylim(0, 5)
+        plt.grid()
         average_profile.append(bm.avg_prof(shifted_profile))
         peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
+        plt.subplot(1,2,2)
+        plt.plot(phase, average_profile[dm_id])
+        plt.xlim(-180, 180)
+        plt.ylim(0, 5)
+        plt.grid()
+        fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
     
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
@@ -240,28 +256,29 @@ if args.getPlot != None:
 #===========================================
 # 1. SET A ZERO BASELINE AND PLOT THE PROFILE:
 #===========================================
-    fig, ax = plt.subplots()
+    fig2, ax2 = plt.subplots()
     for k in np.arange(len(profile)):
         colormap = plt.cm.gist_ncar
         #plt.gca().set_color_cycle([colormap(k+1)])
-        ax.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
+        ax2.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
+        #ax2.plot(phase, profile[k], label='frequency = %0.2f GHz' %freq[k])
 	plt.title('A sequence of %i pulse profile' %nch)
-	plt.xlabel('phase (degrees)')
+	plt.xlabel('Phase (degrees)')
+        plt.ylabel('Profile number')
         plt.xlim(-180,180)
-        spacing = 10 
+        '''spacing = 10 
         minorLocator = MultipleLocator(spacing)
-        ax.yaxis.set_minor_locator(minorLocator)
-        ax.xaxis.set_minor_locator(minorLocator)
-        ax.grid(which='minor')
+        ax2.yaxis.set_minor_locator(minorLocator)
+        ax2.xaxis.set_minor_locator(minorLocator)
+        ax2.grid(which='minor')'''
         plt.grid('on')
-        
+    fig2.savefig('sequence.png')
     #============================================
     #    2D emission region:
     #============================================
-    meanBeam = np.mean(beam, axis=0)
-    xlos, ylos, thetalos = bm.los(alpha, beta, res)
-    fig2 = plt.figure(figsize=(10,5))
-    ax1 = fig2.add_subplot(1,2,1)
+    '''xlos, ylos, thetalos = bm.los(alpha, beta, res)
+    fig3 = plt.figure(figsize=(10,5))
+    ax3 = fig3.add_subplot(1,2,1)
     plt.plot(xlos, ylos, '+r')
     plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
     plt.xlabel('X (degrees)')
@@ -281,10 +298,33 @@ if args.getPlot != None:
     plt.ylim(y1,y2)
     plt.colorbar()
     # 1D plot
-    ax2 = fig2.add_subplot(1,2,2)
+    ax4 = fig3.add_subplot(1,2,2)
     plt.plot(phase, profile[0])
-    plt.title('Profile at %.3f MHz' % freq[0])
+    plt.title('Profile at %.3f GHz' % freq[0])
     plt.xlim(-180, 180)
     plt.xlabel('Phase ')
     plt.ylabel('Intensity')
-    plt.show()
+    '''
+    for bid in range(nch):
+        xlos, ylos, thetalos = bm.los(alpha, beta, res)
+        fig3 = plt.figure(figsize=(10,5))
+        ax3 = fig3.add_subplot(1,2,1)
+        plt.plot(xlos, ylos, '+r')
+        plt.imshow(beam[bid].T, extent=[-180, 180, 180, -180])
+        plt.xlabel('X (degrees)')
+        plt.title('Radio pulsar beam')
+        plt.ylabel('Y (degrees)')
+        # find zoomed extent for plot
+        plt.xlim(-40, 40)
+        plt.ylim(-40, 40)
+        plt.colorbar()
+        # 1D profile plot
+        ax4 = fig3.add_subplot(1,2,2)
+        plt.plot(phase, profile[bid])
+        plt.title('Profile at %.3f GHz' % freq[bid])
+        plt.xlim(-180, 180)
+        plt.ylim(0, 5)
+        plt.xlabel('Phase ')
+        plt.ylabel('Intensity')
+        fig3.savefig('beam_%.3f_GHz_.png' %freq[bid]) 
+        print 'Done!'
