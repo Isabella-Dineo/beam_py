@@ -9,6 +9,7 @@ import beamModel as bm
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+import scipy.signal as sci_sig
 from matplotlib.ticker import MultipleLocator
 
 #==============================================================================================================================================
@@ -40,7 +41,7 @@ def generateBeam(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab, iseed, f
 #   initialize parameters:
     xmin = -180.
     xmax = 180.
-    res = 1e3 #resolution
+#    res = 1e4 #resolution
     ymin = -180.
     ymax = 180.
     dx = (xmax - xmin)/res
@@ -208,13 +209,21 @@ else:
 #      5. Fit a DM Curve:
 #==================================================================
 #if any(SN > 10):
+highres_phase = np.linspace(-180,180,10*res)
+resampled = np.zeros((nch,10*res))
+for nfr in range(len(freq)):
+    resampled[nfr] = sci_sig.resample(profile[nfr], 10*res)
+
 if all(i > 10 for i in SN):
     average_profile = []
     peaks_of_average = []
-    phase_bin0 = bm.find_phase_bin(profile[nch - 1])
-    phase_bin1 = bm.find_phase_bin(profile[0])
-    dm_range = bm.find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
-
+#    phase_bin0 = bm.find_phase_bin(profile[nch - 1])
+#    phase_bin1 = bm.find_phase_bin(profile[0])
+    phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
+    phase_bin1 = bm.find_phase_bin(resampled[0])
+#    dm_range = bm.find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
+    dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
+    print "range for dm search:", phase_bin0, phase_bin1, dm_range[0], dm_range[-1]
     for dm_id in range(len(dm_range)):
         shifted_profile = []
         fig1 = plt.figure(figsize=(10,5))
@@ -223,22 +232,25 @@ if all(i > 10 for i in SN):
         plt.xlabel('phase (degrees)')
         plt.ylabel('Intensity')
         for freq_id in range(nch-1):
-            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res)
-            shifted_profile.append(np.roll(profile[freq_id], bin_shift))
+            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/10.)
+#            shifted_profile.append(np.roll(profile[freq_id], bin_shift))
+            shifted_profile.append(np.roll(resampled[freq_id], bin_shift))
             plt.subplot(1,2,1)
-            plt.plot(phase, shifted_profile[freq_id])
+            plt.plot(highres_phase, shifted_profile[freq_id])
         plt.xlim(-180,180)
         plt.ylim(0, 5)
         plt.grid()
         average_profile.append(bm.avg_prof(shifted_profile))
         peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
         plt.subplot(1,2,2)
-        plt.plot(phase, average_profile[dm_id])
+        plt.plot(highres_phase, average_profile[dm_id])
         plt.xlim(-180, 180)
         plt.ylim(0, 5)
         plt.grid()
         fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
-    
+    snrfig = plt.figure()
+    plt.plot(dm_range,peaks_of_average)
+    snrfig.savefig('SNR_DM.png')
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
             best_dm = dm_range[i]

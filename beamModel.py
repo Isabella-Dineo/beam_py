@@ -618,7 +618,8 @@ def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
         # Convert the phase to time and find a corresponding delta_dm:
         delta_t = delta_phase/360. * P
         dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
-    delta_dm = np.linspace(-dm - range_dm, -dm + range_dm, num=20)# try only 20 for now
+#    delta_dm = np.linspace(-dm - range_dm, -dm + range_dm, num=20)# try only 20 for now
+    delta_dm = np.linspace(- 5. * dm, 3. * dm , num=20)# try only 20 for now
     return delta_dm
 
 
