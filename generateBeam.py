@@ -188,7 +188,7 @@ else:
     normdiscrete = stats.rv_discrete(values=(psrcatDM, probs), name='normDiscrete')
     #Select a random dm for scattering
     np.random.seed(iseed) 
-    randDM = normdiscrete.rvs(size=2)
+    randDM = normdiscrete.rvs(size=1)
     print 'Scattering with dm %.5f '%randDM
 
     # Follow the scattering routine:
