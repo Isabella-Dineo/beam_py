@@ -178,14 +178,31 @@ if scr == None:
 
 else:
     sc_prof = []
+    #read files containing know pulsar dm
+    psrcatDM = np.loadtxt(args.dmFile)
+    # Compute probabilities (normalize)
+    probs = [dmVal/sum(psrcatDM) for dmVal in psrcatDM]
+    #Define a probability distribution function
+    normalDiscrete = stats.rv_discrete(values=(psrcatDM, probs), seed=iseed, name='normaldiscrete')
+    #Select a random dm for scattering
+    randDM = normaldiscrete.rvs(size=1)
+    print 'Scattering with dm %.5f '%randDM
+
+    # Follow the scattering routine:
     for pid in np.arange(len(prof)):
+        # Compute a train of pulses
         train.append(bm.pulsetrain(3, res, prof[pid]))
 
     for fid in np.arange(len(freq)):
+        #Find the scattering timescale for the random dm
         tau = bm.sc_time(freq[fid], dm, iseed)
+        #Determine a broadening function
         bf = bm.broadening(tau, P, res)
+        #scatter the train of pulses with this function
         sc_train = bm.scatter(train[fid], bf)
-        sc_prof.append(bm.extractpulse(sc_train, 2, res)) #scattered pulse profile
+        #Extract a pulse profile
+        sc_prof.append(bm.extractpulse(sc_train, 2, res))
+
 
 #===========================================
 #     4. Add noise:
