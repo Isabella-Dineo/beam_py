@@ -10,6 +10,7 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 import scipy.signal as sci_sig
+import scipy.stats as stats
 from matplotlib.ticker import MultipleLocator
 
 #==============================================================================================================================================
@@ -119,6 +120,7 @@ parser.add_argument('-do_ab', default=None, help='include aberration ofset (defa
 parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
 parser.add_argument('-doFan', default=None, type=str, help='Fan beam - default: patchy beam')
 parser.add_argument('-getPlot', default=None, help='Option plot and save the beam / profiles')
+parser.add_argument('-dmFile', default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
@@ -183,9 +185,10 @@ else:
     # Compute probabilities (normalize)
     probs = [dmVal/sum(psrcatDM) for dmVal in psrcatDM]
     #Define a probability distribution function
-    normalDiscrete = stats.rv_discrete(values=(psrcatDM, probs), seed=iseed, name='normaldiscrete')
+    normdiscrete = stats.rv_discrete(values=(psrcatDM, probs), name='normDiscrete')
     #Select a random dm for scattering
-    randDM = normaldiscrete.rvs(size=1)
+    np.random.seed(iseed) 
+    randDM = normdiscrete.rvs(size=2)
     print 'Scattering with dm %.5f '%randDM
 
     # Follow the scattering routine:
