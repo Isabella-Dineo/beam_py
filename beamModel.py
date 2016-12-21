@@ -375,7 +375,7 @@ def pulsetrain(npulses, numberofbins, prof):
     train = np.zeros(npulses * int(nbins))
     for i in range(npulses):
         startbin = i * nbins
-        train[startbin:startbin + nbins] = prof
+        train[int(startbin):int(startbin + nbins)] = prof
 
     return train
 

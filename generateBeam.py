@@ -230,7 +230,7 @@ else:
 #==================================================================
 #if any(SN > 10):
 highres_phase = np.linspace(-180,180,10*res)
-resampled = np.zeros((nch,10*res))
+resampled = np.zeros((int(nch),int(10*res)))
 for nfr in range(len(freq)):
     resampled[nfr] = sci_sig.resample(profile[nfr], 10*res)
 

@@ -795,7 +795,6 @@ plt.grid()
 #    2D emission region:
 meanBeam = np.mean(beam, axis=0)
 xlos, ylos, thetalos = los(alpha, beta, res)
-<<<<<<< HEAD
 #for i in range(len(beam)):
 '''
 =======
@@ -878,10 +877,8 @@ plt.xlim(-180, 180)#lt.title('Profile at freq = %.4f GHz' % freq[-1])
 #    print "peaks", p
 #    print "bin", b
 #plt.show()
-=======
 plt.plot(phase, profile[0]) 
 plt.xlim(-180, 180)
 plt.xlabel('Phase (degrees)')
 
 plt.show()
->>>>>>> 5ff6357

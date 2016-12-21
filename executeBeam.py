@@ -3,19 +3,19 @@
 import numpy as np
 import argparse, os
 
-parser = argparse.ArgumentParser(prog='Run the beam code multiple times.')
-parser.add_argument('-f', type=str, default='outFile')
-parser.add_argument('-it', type=int, default=1, help='Number of iterations.')
-parser.add_argument('-p', type=float, default=None, help='Period in seconds.')
-parser.add_argument('-nch', type=float, default=10, help='Number of channels.')
-parser.add_argument('-min_freq', type=float, default=0.03, help='Start frequency.')
-parser.add_argument('-bw', type=float, default=0.01, help='Channel bandwidth.')
-parser.add_argument('-snr', type=int, default=100, help='Signal to noise ratio.')
-parser.add_argument('-iseed', type=int, default=None, help='Seed for the random munber generator.')
-parser.add_argument('-getPlot', type=str, default=None, help='Option to produce the beam plot.')
-#parser.add_argument('-doFan', type=str, default=None, help='Option to produce the beam plot.')
-parser.add_argument('-scatter', default=None, type=int, help='Option to include scattering effects.')
-parser.add_argument('-dmFile', type=str, default='psrcatdm.dat', help='File containing known dm values from psrcat (used for scattering).')
+parser = argparse.ArgumentParser(prog='Run the beam code multiple times.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('-f', metavar='<fileName>', type=str, default='outFile')
+parser.add_argument('-it', metavar='<iterarions>', type=int, default=1, help='Number of iterations.')
+parser.add_argument('-p', metavar='<period>', type=float, default=None, help='Period in seconds.')
+parser.add_argument('-nch', metavar='<nch>', type=float, default=10, help='Number of channels.')
+parser.add_argument('-min_freq', metavar='<minFreq>', type=float, default=0.03, help='Start frequency (GHz).')
+parser.add_argument('-bw', metavar='<bandwidth>', type=float, default=0.01, help='Channel bandwidth (GHz).')
+parser.add_argument('-snr', metavar='<SNR>',type=int, default=100, help='Signal to noise ratio.')
+parser.add_argument('-iseed', metavar='<seed>', type=int, default=None, help='Seed for the random munber generator.')
+parser.add_argument('-getPlot', metavar='<boolean>', type=int, default=None, help='Option to produce the beam plot.')
+parser.add_argument('-doFan', metavar='<boolean>', type=str, default=None, help='Option to produce the beam plot.')
+parser.add_argument('-scatter', metavar='<boolean>', default=None, type=int, help='Option to include scattering effects.')
+parser.add_argument('-dmFile', metavar='<fileName>', type=str, default='psrcatdm.dat', help='File containing known dm values from psrcat (used for scattering).')
 args = parser.parse_args()
 filename = args.f
 iterations = args.it
@@ -39,5 +39,5 @@ for i in range(iterations):
     nc = 4
     npatch = 4 
     os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d -snr %f \
-               -iseed %d -outfile %s -getPlot %s -scatter %d -dmFile %s'\
-               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.getPlot, args.scatter, args.dmFile))
+               -iseed %d -outfile %s -scatter %s -dmFile %s -getPlot %d'\
+               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.scatter, args.dmFile, args.getPlot))
