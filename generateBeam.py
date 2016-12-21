@@ -177,7 +177,7 @@ bf = []
 tau = bm.sc_time(freq, dm, iseed)
 if scr == None:
     sc_prof = prof # returns the profile without scattering 
-
+    randDM = 0.0
 else:
     sc_prof = []
     #read files containing know pulsar dm
@@ -198,7 +198,7 @@ else:
 
     for fid in np.arange(len(freq)):
         #Find the scattering timescale for the random dm
-        tau = bm.sc_time(freq[fid], dm, iseed)
+        tau = bm.sc_time(freq[fid], randDM, iseed)
         #Determine a broadening function
         bf = bm.broadening(tau, P, res)
         #scatter the train of pulses with this function
@@ -243,26 +243,25 @@ if all(i > 10 for i in SN):
     phase_bin1 = bm.find_phase_bin(resampled[0])
 #    dm_range = bm.find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
     dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
-    print "range for dm search:", phase_bin0, phase_bin1, dm_range[0], dm_range[-1]
     for dm_id in range(len(dm_range)):
         shifted_profile = []
-        fig1 = plt.figure(figsize=(10,5))
+        """fig1 = plt.figure(figsize=(10,5))
         st = fig1.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
         plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
         plt.xlabel('phase (degrees)')
-        plt.ylabel('Intensity')
+        plt.ylabel('Intensity')"""
         for freq_id in range(nch-1):
             bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/10.)
 #            shifted_profile.append(np.roll(profile[freq_id], bin_shift))
             shifted_profile.append(np.roll(resampled[freq_id], bin_shift))
-            plt.subplot(1,2,1)
+            """plt.subplot(1,2,1)
             plt.plot(highres_phase, shifted_profile[freq_id])
         plt.xlim(-180,180)
         plt.ylim(0, 5)
-        plt.grid()
+        plt.grid()"""
         average_profile.append(bm.avg_prof(shifted_profile))
         peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
-        plt.subplot(1,2,2)
+        """plt.subplot(1,2,2)
         plt.plot(highres_phase, average_profile[dm_id])
         plt.xlim(-180, 180)
         plt.ylim(0, 5)
@@ -270,13 +269,13 @@ if all(i > 10 for i in SN):
         fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
     snrfig = plt.figure()
     plt.plot(dm_range,peaks_of_average)
-    snrfig.savefig('SNR_DM.png')
+    snrfig.savefig('SNR_DM.png')"""
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
             best_dm = dm_range[i]
     
     # Write out important parameters into a file    
-    pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, best_dm])
+    pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, randDM, best_dm])
     f = open(fileName, 'a')
     f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
@@ -308,7 +307,7 @@ if args.getPlot != None:
     #============================================
     #    2D emission region:
     #============================================
-    '''xlos, ylos, thetalos = bm.los(alpha, beta, res)
+    xlos, ylos, thetalos = bm.los(alpha, beta, res)
     fig3 = plt.figure(figsize=(10,5))
     ax3 = fig3.add_subplot(1,2,1)
     plt.plot(xlos, ylos, '+r')
@@ -336,8 +335,8 @@ if args.getPlot != None:
     plt.xlim(-180, 180)
     plt.xlabel('Phase ')
     plt.ylabel('Intensity')
-    '''
-    for bid in range(nch):
+    fig3.savefig('beam_%.3f_GHz_.png' %freq[0]) 
+    """for bid in range(nch):
         xlos, ylos, thetalos = bm.los(alpha, beta, res)
         fig3 = plt.figure(figsize=(10,5))
         ax3 = fig3.add_subplot(1,2,1)
@@ -359,4 +358,4 @@ if args.getPlot != None:
         plt.xlabel('Phase ')
         plt.ylabel('Intensity')
         fig3.savefig('beam_%.3f_GHz_.png' %freq[bid]) 
-        print 'Done!'
+        print 'Done!'"""

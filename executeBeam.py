@@ -14,6 +14,8 @@ parser.add_argument('-snr', type=int, default=100, help='Signal to noise ratio.'
 parser.add_argument('-iseed', type=int, default=None, help='Seed for the random munber generator.')
 parser.add_argument('-getPlot', type=str, default=None, help='Option to produce the beam plot.')
 #parser.add_argument('-doFan', type=str, default=None, help='Option to produce the beam plot.')
+parser.add_argument('-scatter', default=None, type=int, help='Option to include scattering effects.')
+parser.add_argument('-dmFile', type=str, default='psrcatdm.dat', help='File containing known dm values from psrcat (used for scattering).')
 args = parser.parse_args()
 filename = args.f
 iterations = args.it
@@ -37,5 +39,5 @@ for i in range(iterations):
     nc = 4
     npatch = 4 
     os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d -snr %f \
-               -iseed %d -outfile %s -getPlot %s'\
-               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.getPlot ))
+               -iseed %d -outfile %s -getPlot %s -scatter %d -dmFile %s'\
+               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.getPlot, args.scatter, args.dmFile))
