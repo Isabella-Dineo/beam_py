@@ -177,19 +177,23 @@ bf = []
 tau = bm.sc_time(freq, dm, iseed)
 if scr == None:
     sc_prof = prof # returns the profile without scattering 
-    randDM = 0.0
+    randDM = 0.0   # random Dm for scattering (time_scale : No scattering)
 else:
     sc_prof = []
     #read files containing know pulsar dm
     psrcatDM = np.loadtxt(args.dmFile)
     # Compute probabilities (normalize)
-    probs = [dmVal/sum(psrcatDM) for dmVal in psrcatDM]
-    #Define a probability distribution function
-    normdiscrete = stats.rv_discrete(values=(psrcatDM, probs), name='normDiscrete')
+    probabilities = [dmVal/sum(psrcatDM) for dmVal in psrcatDM]
+    '''#Define a probability distribution function
+    dm_distribution = stats.rv_discrete(values=(psrcatDM, probabilities), name='dm_distribution')
     #Select a random dm for scattering
     np.random.seed(iseed) 
-    randDM = normdiscrete.rvs(size=1)
-    print 'Scattering with dm %.5f '%randDM
+    randDM = dm_distribution.rvs(size=1)
+    print 'Scattering with dm %.5f '%randDM'''
+    # using numpy random choice:
+    np.random.seed(iseed)
+    randDM = np.random.choice(psrcatDM, p=probabilities, size=1)
+
 
     # Follow the scattering routine:
     for pid in np.arange(len(prof)):
@@ -257,19 +261,22 @@ if all(i > 10 for i in SN):
             """plt.subplot(1,2,1)
             plt.plot(highres_phase, shifted_profile[freq_id])
         plt.xlim(-180,180)
-        plt.ylim(0, 5)
+        #plt.ylim(0, 5)
         plt.grid()"""
         average_profile.append(bm.avg_prof(shifted_profile))
         peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
         """plt.subplot(1,2,2)
         plt.plot(highres_phase, average_profile[dm_id])
         plt.xlim(-180, 180)
-        plt.ylim(0, 5)
+        #plt.ylim(0, 5)
         plt.grid()
-        fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
+        fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))"""
+
+    # Create a snr vs dm plot for visualization
     snrfig = plt.figure()
     plt.plot(dm_range,peaks_of_average)
-    snrfig.savefig('SNR_DM.png')"""
+    snrfig.savefig('SNR_DM.png')
+    # Find the best dm (dm that maximises SNR)
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
             best_dm = dm_range[i]
@@ -278,7 +285,6 @@ if all(i > 10 for i in SN):
     pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, randDM, best_dm])
     f = open(fileName, 'a')
     f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
-
 
 #==================================================================
 #                     PRODUCE PLOTS:
