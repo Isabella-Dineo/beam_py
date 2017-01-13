@@ -39,5 +39,5 @@ for i in range(iterations):
     nc = 4
     npatch = 4 
     os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
-               -snr %d -iseed %d -outfile %s '\
-               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename))
+               -snr %d -iseed %d -outfile %s -scatter %s '\
+               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename, args.scatter))
