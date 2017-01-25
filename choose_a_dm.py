@@ -8,7 +8,7 @@ import scipy.stats as stats
 # Load a file with known dm values from psrcat
 psrcatdm = np.loadtxt('psrcatdm.dat')
 # Create a histogram:
-hist, bin_edges = np.histogram(psrcatdm, bins=9) #10bins forces empty bins ()
+hist, bin_edges = np.histogram(psrcatdm, bins=9) #10bins forces empty bins
 # Compare the hist values with matplotlib values (just because I don't trust my own judgement!)
 plt.bar(bin_edges[:-1], hist, width=bin_edges[1]-bin_edges[0], color='red', alpha=0.5, label='numpy histogram' )
 plt.hist(psrcatdm, bins=9, alpha=0.5, label='matplotlib histogram' )
@@ -30,6 +30,8 @@ plt.figure()
 plt.hist(probs, bins=9)
 plt.title('Probability distribution')
 plt.xlabel('probabilities')
+plt.xlim(0, 0.2)
+# check that probailities sums to 1 in each interval
 for l in range(len(probs)):
     print sum(probs[l])
 #------------------------------------------------------------------------------
