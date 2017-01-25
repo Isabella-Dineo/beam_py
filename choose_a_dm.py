@@ -8,10 +8,11 @@ import scipy.stats as stats
 # Load a file with known dm values from psrcat
 psrcatdm = np.loadtxt('psrcatdm.dat')
 # Create a histogram:
-hist, bin_edges = np.histogram(psrcatdm, bins=9) #10bins forces empty bins
+nbins = 9 # >= 10 bins forces empty bins that give a problem when calculating probabilities 
+hist, bin_edges = np.histogram(psrcatdm, bins=nbins)
 # Compare the hist values with matplotlib values (just because I don't trust my own judgement!)
 plt.bar(bin_edges[:-1], hist, width=bin_edges[1]-bin_edges[0], color='red', alpha=0.5, label='numpy histogram' )
-plt.hist(psrcatdm, bins=9, alpha=0.5, label='matplotlib histogram' )
+plt.hist(psrcatdm, bins=nbins, alpha=0.5, label='matplotlib histogram' )
 plt.title('PSRCAT dm distribution')
 plt.xlabel('dm (pc cm^-3)')
 plt.legend()
@@ -27,7 +28,7 @@ for j in range(len(bin_edges) - 1):
     # probs will contain arrays of probabilities divided into intervals = bin numbers
 # Same probability distribution pattern??:
 plt.figure()
-plt.hist(probs, bins=9)
+plt.hist(probs, bins=nbins)
 plt.title('Probability distribution')
 plt.xlabel('probabilities')
 plt.xlim(0, 0.2)
@@ -41,7 +42,7 @@ rand_int = np.random.randint(0, len(dm_arranged))
 normdiscrete = stats.rv_discrete(values=(dm_arranged[rand_int], probs[rand_int]))
 rand_dm = normdiscrete.rvs(size=500)
 plt.figure()
-plt.hist(rand_dm, alpha=0.5, bins=9)
+plt.hist(rand_dm, alpha=0.5, bins=nbins)
 plt.title('Randomly samples dm values from rv_discrete')
 plt.xlabel('dm (pc cm^-3)')
 plt.show()
