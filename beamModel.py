@@ -4,6 +4,7 @@
 
 import numpy as np
 from scipy import constants
+import scipy.stats as stats
 
 #====================================================================================================================================================
 #                                                       PRECISION ERRORS                
@@ -491,6 +492,39 @@ def find_width(prof):
     w10 =(float(right -left)/float(len(prof)))* 360.
     return w10
 
+def getadm(psrcatdm, iseed):
+    """Function to randomly select a dm value from the known pulsar dms in the catalogue.
+
+       Creates a distribution of the dm values given their probabilities, and randomly select
+       a dm value to use for scattering.
+       
+       Args:
+       -----
+       psrcatdmfile : a file containing psrcat dm values in 1 column (nan values replaced with zeros)
+       iseed        : seed for the random number generator [int].
+       Returns:
+       --------
+       rand_dm      : randomly selected dm value (pc cm^-3). 
+    """
+    dm_file_name = str(psrcatdm)
+    dm_file = np.loadtxt(dm_file_name)
+    nbins = 9 # number of bins to use (any number > 9 creates empty bins wchich gives problems when calculating probabilities)
+    hist, bin_edges = np.histogram(dm_file, bins=nbins) # creates a histogram distribution
+    # Arrange the dm into arrays containing values that fall into that interval:
+    dm_arranged = []
+    for i in range(len(bin_edges) - 1):
+        dm_arranged.append(np.array(dm_file[np.where((dm_file > bin_edges[i]) & (dm_file <= bin_edges[i+1]))]))
+    # Find probabilities of the values in that interval
+    probs = []
+    for j in range(len(bin_edges) - 1):
+        probs.append([dm/sum(dm_arranged[j]) for dm in dm_arranged[j]])
+    # Define an arbitrary distribution
+    np.random.seed(iseed)
+    rand_int = np.random.randint(0, len(dm_arranged)) # a random bin to use
+    normdiscrete = stats.rv_discrete(values=(dm_arranged[rand_int], probs[rand_int])) # distribition in that bin
+    rand_dm = normdiscrete.rvs(size=1) # select a random dm value
+
+    return rand_dm
 #====================================================================================================================================================
 #                                                               ADD NOISE:
 #====================================================================================================================================================

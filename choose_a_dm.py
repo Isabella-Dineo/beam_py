@@ -38,15 +38,17 @@ for l in range(len(probs)):
 #------------------------------------------------------------------------------
 # Define an arbitrary distribution
 #probs = np.hstack(np.asarray(probs))
+np.random.seed(10)
 rand_int = np.random.randint(0, len(dm_arranged))
 normdiscrete = stats.rv_discrete(values=(dm_arranged[rand_int], probs[rand_int]))
-rand_dm = normdiscrete.rvs(size=500)
+#rand_dm = normdiscrete.rvs(size=500)
+rand_dm = normdiscrete.rvs(size=100)
 plt.figure()
 plt.hist(rand_dm, alpha=0.5, bins=nbins)
 plt.title('Randomly samples dm values from rv_discrete')
 plt.xlabel('dm (pc cm^-3)')
 plt.show()
-
+print rand_dm
 """#-------------------------------------------------------------------------------
 for k in range(len(dm_arranged))
     rand_int = np.random.randint(0, len(dm_arranged)) 
