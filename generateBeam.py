@@ -177,24 +177,10 @@ bf = []
 tau = bm.sc_time(freq, dm, iseed)
 if scr == None:
     sc_prof = prof # returns the profile without scattering 
-    randDM = 0.0   # random Dm for scattering (time_scale : No scattering)
+    rand_dm = 0.0   # random Dm for scattering (time_scale : No scattering)
 else:
     sc_prof = []
-    #read files containing know pulsar dm
-    psrcatDM = np.loadtxt(args.dmFile)
-    # Compute probabilities (normalize)
-    probabilities = [dmVal/sum(psrcatDM) for dmVal in psrcatDM]
-    '''#Define a probability distribution function
-    dm_distribution = stats.rv_discrete(values=(psrcatDM, probabilities), name='dm_distribution')
-    #Select a random dm for scattering
-    np.random.seed(iseed) 
-    randDM = dm_distribution.rvs(size=1)
-    print 'Scattering with dm %.5f '%randDM'''
-    # using numpy random choice:
-    np.random.seed(iseed)
-    randDM = np.random.choice(psrcatDM, p=probabilities, size=1)
-
-
+    rand_dm = bm.getadm(args.dmFile, iseed) # random dm value from a dist. of known psr dm
     # Follow the scattering routine:
     for pid in np.arange(len(prof)):
         # Compute a train of pulses
@@ -202,7 +188,7 @@ else:
 
     for fid in np.arange(len(freq)):
         #Find the scattering timescale for the random dm
-        tau = bm.sc_time(freq[fid], randDM, iseed)
+        tau = bm.sc_time(freq[fid], rand_dm, iseed)
         #Determine a broadening function
         bf = bm.broadening(tau, P, res)
         #scatter the train of pulses with this function
@@ -282,7 +268,7 @@ if all(i > 10 for i in SN):
             best_dm = dm_range[i]
     
     # Write out important parameters into a file    
-    pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, randDM, best_dm])
+    pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, rand_dm, best_dm])
     f = open(fileName, 'a')
     f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
