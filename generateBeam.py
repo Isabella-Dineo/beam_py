@@ -8,12 +8,12 @@
 import beamModel as bm
 import numpy as np
 import argparse
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy.signal as sci_sig
 import scipy.stats as stats
 from matplotlib.ticker import MultipleLocator
-import matplotlib
-matplotlib.use('Agg')
 
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
