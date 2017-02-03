@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import scipy.signal as sci_sig
 import scipy.stats as stats
 from matplotlib.ticker import MultipleLocator
+import matplotlib
+matplotlib.use('Agg')
 
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
