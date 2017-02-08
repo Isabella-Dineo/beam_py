@@ -16,7 +16,7 @@ from matplotlib.ticker import MultipleLocator
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
 #==============================================================================================================================================
-def generateBeam(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab, iseed, fanBeam):
+def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBeam):
     """Function to plot the patches for a given rotation period.
     
        A rgs:
@@ -114,7 +114,6 @@ parser.add_argument('-chbw', metavar="<chanbw>", type=float, default='0.8', help
 parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number of channels (default = 5)')
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
-parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc used to scatter profiles (default = 1)')
 parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
 parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
@@ -131,7 +130,6 @@ hmax = args.hmax
 alpha = args.alpha
 beta = args.beta
 snr = args.snr
-dm = args.dm
 do_ab = args.do_ab
 nch = args.nch
 min_freq = args.min_freq
@@ -164,7 +162,7 @@ H = bm.emission_height(P, ncomp, iseed, hmin, hmax)
 #========================================
 for i in np.arange(len(freq)):
     heights = bm.height_f(H, freq[i]) # frequency dependent H
-    pr, Z = generateBeam(P, alpha, beta, freq[i], dm, heights, npatch, snr, do_ab, iseed, fanBeam)
+    pr, Z = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam)
     w10.append(bm.find_width(pr)) # Width at 10% of the peak 
     prof.append(pr)               # Profile for that frequency
     beam.append(Z)                # 2D beam 
