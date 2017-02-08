@@ -3,8 +3,6 @@
 # Program to generate a 2D beam and the corresponding 1D line 
 # of sight profiles at varying frequency.
 
-
-
 import beamModel as bm
 import numpy as np
 import argparse
@@ -86,7 +84,7 @@ def generateBeam(P, alpha, beta, freq, dm, heights, npatch, snr, do_ab, iseed, f
             distance = (np.sqrt((X - pc[0])**2 + (Y - pc[1])**2))/sigmax
             distance[np.where(distance > 3.0)] = 0.0
             distance[np.where(distance != 0.0)] = peakAmp
-            if do_ab == None:
+            if not do_ab:
                 Z += distance * np.exp(-((X - pc[0])**2 / (2 * sigmax**2) + (Y - pc[1])**2 / (2 * sigmay**2)))
             else:
                 Z += distance * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
@@ -116,13 +114,13 @@ parser.add_argument('-chbw', metavar="<chanbw>", type=float, default='0.8', help
 parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number of channels (default = 5)')
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
-parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc (default = 1)')
+parser.add_argument('-dm', metavar="<dm>", type=float, default=1, help='dispersion measure in cm^-3 pc used to scatter profiles (default = 1)')
+parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
 parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
-parser.add_argument('-do_ab', default=None, help='include aberration ofset (default = None)')
-parser.add_argument('-scatter', default=None, help='include scattering (default = None)')
-parser.add_argument('-doFan', default=None, type=str, help='Fan beam - default: patchy beam')
-parser.add_argument('-getPlot', default=None, help='Option plot and save the beam / profiles')
-parser.add_argument('-dmFile', default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
+parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
+parser.add_argument('--scatter', action="store_true", help='include scattering (default = None)')
+parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
+parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
@@ -177,8 +175,9 @@ for i in np.arange(len(freq)):
 train = []
 bf = []
 tau = bm.sc_time(freq, dm, iseed)
-if scr == None:
+if not scr:
     sc_prof = prof # returns the profile without scattering 
+
     rand_dm = 0.0   # random Dm for scattering (time_scale : No scattering)
 else:
     sc_prof = []
@@ -259,11 +258,14 @@ if all(i > 10 for i in SN):
         #plt.ylim(0, 5)
         plt.grid()
         fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))"""
-
     # Create a snr vs dm plot for visualization
     snrfig = plt.figure()
-    plt.plot(dm_range,peaks_of_average)
+    plt.plot(dm_range, peaks_of_average)
+    plt.title('Best dm trial')
+    plt.xlabel('delta dm (pc cm^-3)')
+    plt.ylabel('SNR')
     snrfig.savefig('SNR_DM.png')
+
     # Find the best dm (dm that maximises SNR)
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
@@ -277,9 +279,9 @@ if all(i > 10 for i in SN):
 #==================================================================
 #                     PRODUCE PLOTS:
 #==================================================================
-if args.getPlot != None: 
+if args.getPlot:
 #===========================================
-# 1. SET A ZERO BASELINE AND PLOT THE PROFILE:
+# SET A ZERO BASELINE AND PLOT THE PROFILE:
 #===========================================
     fig2, ax2 = plt.subplots()
     for k in np.arange(len(profile)):
@@ -291,11 +293,6 @@ if args.getPlot != None:
 	plt.xlabel('Phase (degrees)')
         plt.ylabel('Profile number')
         plt.xlim(-180,180)
-        '''spacing = 10 
-        minorLocator = MultipleLocator(spacing)
-        ax2.yaxis.set_minor_locator(minorLocator)
-        ax2.xaxis.set_minor_locator(minorLocator)
-        ax2.grid(which='minor')'''
         plt.grid('on')
     fig2.savefig('sequence.png')
     #============================================

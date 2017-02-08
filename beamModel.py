@@ -224,13 +224,16 @@ def patch_width(P, heights):
 #====================================================================================================================================================
 #                                                       PATCH CENTER:
 #====================================================================================================================================================
-def patch_center(P, heights, npatch, iseed, fanBeam):
+def patch_center(P, heights, npatch, iseed, fanBeam=False):
     """Function find centres of the patches
        
        Args:
        -----
-       P       : rotatinal period
+       P       : rotational period.
        heights : emission heights (in km).
+       npatch  : number of patches.
+       iseed   : random nunber seed.
+       fanBeam : option to use fan beam model.
        
        
        Returns:
@@ -245,7 +248,7 @@ def patch_center(P, heights, npatch, iseed, fanBeam):
     centery = []
     np.random.seed(iseed)
 #   Fan beam model:
-    if fanBeam == None:
+    if fanBeam is False:
         theta = 2 * np.pi * np.random.random(len(heights) * npatch)
     else:
         theta = 2 * np.pi * np.random.random(npatch)
@@ -254,7 +257,8 @@ def patch_center(P, heights, npatch, iseed, fanBeam):
         tempCenterX = []
         tempCenterY = []
 
-        if fanBeam == None:
+        if fanBeam is False:
+
             for i in np.arange(npatch):
                 tempCenterX.append(opa[j] * np.sin(theta[j*npatch + i]))
                 tempCenterY.append(opa[j] * np.cos(theta[j*npatch + i]))
