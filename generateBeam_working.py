@@ -215,21 +215,19 @@ while doDm:
 #==================================================================
     SN = np.asarray(SN)
     snr_threshold = 10
-    print "Working with arrays? ", type(SN)
     highres_phase = np.linspace(-180,180,10*res)
     resampled = np.zeros((int(nch),int(10*res)))
     for nfr in range(len(freq)):
         resampled[nfr] = sci_sig.resample(profile[nfr], int(10*res))
     if any(i < snr_threshold for i in SN):
-        print "Still below threshold, trying again!"
-        iseed = np.random.randint(0, 90012410)
+        print "Searching for profiles above threshold!"
+        iseed = np.random.randint(0, 4294967295)
     else:
-        print "Found!"
+        print "Searching for delta dm!"
         # find snr of the profile:
-        for leka in profile:
+        for p_id in profile:
             rms = bm.noise_rms(snr)
-            sigtonoise = bm.signal_to_noise(np.max(leka), rms)
-            print "It's signal to noise: ", sigtonoise
+            sigtonoise = bm.signal_to_noise(np.max(p_id), rms)
         average_profile = []
         peaks_of_average = []
         phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
