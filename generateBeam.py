@@ -172,7 +172,6 @@ for i in np.arange(len(freq)):
 #==========================================
 train = []
 bf = []
-tau = bm.sc_time(freq, dm, iseed)
 if not scr:
     sc_prof = prof # returns the profile without scattering 
 
@@ -210,10 +209,10 @@ if snr == None:
 else:
     #rms = bm.noise_rms(snr, np.max(peaks))
     rms = bm.noise_rms(snr)                            # Determine the noise rms
-    profile = bm.add_noise(sc_prof, rms, res)          # add noise to each of the profile
+    profile = bm.add_noise(sc_prof, rms, res)          # add noise to each profile
     for p in profile:
        SN.append(bm.signal_to_noise(np.max(p), rms))   # snr for each of the profiles
-
+# YOU MAY NEED TO CHECK THE here before doing dm search instead of putting that in a loop/under condition
 #==================================================================
 #      5. Fit a DM Curve:
 #==================================================================
