@@ -6,6 +6,7 @@
 import beamModel as bm
 import numpy as np
 import argparse
+import time
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -124,7 +125,8 @@ args = parser.parse_args()
 P = args.p
 ncomp = args.nc
 npatch = args.npatch
-iseed = args.iseed
+#iseed = args.iseed
+iseed = time.time() # Using current time as seed to avoid repeating the same random number generation
 hmin = args.hmin
 hmax = args.hmax
 alpha = args.alpha
