@@ -65,6 +65,10 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     centerx, centery = bm.patch_center(P, heights, npatch, iseed, fanBeam)
 #   Get the ofset due to abberation:
     ab_xofset, ab_yofset = bm.aberration(heights, P, alpha)
+    if fanBeam:
+        comp = 1
+    else:
+        comp = comp
 
 #   Find the 1D and 2D profile:
     for cid, comp in enumerate(heights):
@@ -159,6 +163,7 @@ freq = np.linspace(min_freq, max_freq, nch) #channel frequency in GHz!!!
 #     1. Find the emission height:
 #=======================================
 H = bm.emission_height(P, ncomp, iseed, hmin, hmax)
+print "Height: ", H
 #========================================
 #     2. Get profile at each frequency:
 #========================================
