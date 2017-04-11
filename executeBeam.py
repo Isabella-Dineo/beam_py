@@ -24,9 +24,6 @@ fmin = args.min_freq
 bw = args.bw
 nch = args.nch
 snr = args.snr
-print args.getPlot
-print args.scatter
-print args.doFan
 for i in range(iterations):
     if args.iseed == None:
         iseed = np.random.randint(0, 90012410)
