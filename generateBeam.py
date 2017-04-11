@@ -65,12 +65,7 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     centerx, centery = bm.patch_center(P, heights, npatch, iseed, fanBeam)
 #   Get the ofset due to abberation:
     ab_xofset, ab_yofset = bm.aberration(heights, P, alpha)
-    if fanBeam:
-        comp = 1
-    else:
-        comp = comp
-
-#   Find the 1D and 2D profile:
+    #   Find the 1D and 2D profile:
     for cid, comp in enumerate(heights):
 #       widths for circular patches:        
         sigmax = patchwidths[cid]
@@ -124,13 +119,15 @@ parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
 parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
 parser.add_argument('--scatter', action="store_true", help='include scattering (default = None)')
 parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
+parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - default: patchy beam')
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
 npatch = args.npatch
 #iseed = args.iseed
-iseed = time.time() # Using current time as seed to avoid repeating the same random number generation
+#iseed = int(time.time()) # Using current time as seed to avoid repeating the same random number generation
+iseed = 1491655642
 hmin = args.hmin
 hmax = args.hmax
 alpha = args.alpha
@@ -142,6 +139,7 @@ min_freq = args.min_freq
 chbw = args.chbw
 scr = args.scatter
 fanBeam = args.doFan
+hollowCone = args.doHC
 fileName = args.outfile
 
 #====================================================================================================================================================
@@ -162,8 +160,7 @@ freq = np.linspace(min_freq, max_freq, nch) #channel frequency in GHz!!!
 #=======================================
 #     1. Find the emission height:
 #=======================================
-H = bm.emission_height(P, ncomp, iseed, hmin, hmax)
-print "Height: ", H
+H = bm.emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone)
 #========================================
 #     2. Get profile at each frequency:
 #========================================

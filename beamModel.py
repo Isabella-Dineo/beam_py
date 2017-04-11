@@ -113,7 +113,7 @@ def los(alpha, beta, res):
 #====================================================================================================================================================
 #                                                       EMISSION HEIGHTS
 #====================================================================================================================================================
-def emission_height(P, ncomp, iseed, hmin, hmax):
+def emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone):
     """Function to determine emission heights given the period. If no emission height range
        is specified, default used for P < 0.15 is between [950, 1000] and between [20, 1000] 
        for P > 0.15.
@@ -125,6 +125,7 @@ def emission_height(P, ncomp, iseed, hmin, hmax):
        iseed  : Integer seed for a pseudo-random number generator.
        hmin   : Minimum emission height (in km).
        hmax   : Maximum emission height (in km).
+       fanBeam : beam model to simulate
 
        
        Returns:
@@ -133,7 +134,10 @@ def emission_height(P, ncomp, iseed, hmin, hmax):
     """
 
     np.random.seed(iseed)
-    num_H = ncomp # number of discrete emission height
+    if fanBeam or hollowCone:
+        num_H = 1
+    else:
+        num_H = ncomp # number of discrete emission height
 
 #   If height range is not specified:
     if hmin == None and hmax == None:
