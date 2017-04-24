@@ -17,26 +17,27 @@ from matplotlib.ticker import MultipleLocator
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
 #==============================================================================================================================================
-def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBeam):
+def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBeam=None, hollowCone=None):
     """Function to plot the patches for a given rotation period.
     
        A rgs:
        -----
-       P       : rotational period (seconds)
-       alpha   : inclination angle (degrees)
-       beta    : impact parameter (degrees)
-       heights : emission heights (in km)
-       centerx : the patch center projection on the x-axis 
-       centery : the patch center projection on the y-axis
-       snr     : signal to noise ratio       
-       iseed   : seed for the random number generator
-       do_ab   : option to include abberration effects
-       fanBeam : option to use fan beam model 
+       P          : rotational period (seconds)
+       alpha      : inclination angle (degrees)
+       beta       : impact parameter (degrees)
+       heights    : emission heights (in km)
+       centerx    : the patch center projection on the x-axis 
+       centery    : the patch center projection on the y-axis
+       snr        : signal to noise ratio       
+       iseed      : seed for the random number generator
+       do_ab      : option to include abberration effects
+       fanBeam    : option to use fan beam model 
+       hollowCone : option to use hollow cone model
 
        Returns:
        --------
        prof    : an array containing 1D profile
-       Z       : a 2D beam 
+       Z       : a 2D array of the beam 
     
     """    
     
@@ -62,7 +63,7 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
 #   Get the line of sight:
     xlos, ylos, thetalos = bm.los(alpha, beta, res)
 #   Get the centre of the emission patches on the xy-plane
-    centerx, centery = bm.patch_center(P, heights, npatch, iseed, fanBeam)
+    centerx, centery = bm.patch_center(P, heights, npatch, iseed, fanBeam, hollowCone)
 #   Get the ofset due to abberation:
     ab_xofset, ab_yofset = bm.aberration(heights, P, alpha)
     #   Find the 1D and 2D profile:
@@ -112,7 +113,7 @@ parser.add_argument('-npatch', metavar="<npatch>", type=int, default='10', help=
 parser.add_argument('-min_freq', metavar="<minfreq>", type=float, default='0.2', help='min frequency in GHz (default = 0.2 GHz)')
 parser.add_argument('-chbw', metavar="<chanbw>", type=float, default='0.8', help='channel bandwidth in GHz (default = 0.8 GHz)')
 parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number of channels (default = 5)')
-parser.add_argument('-iseed', metavar="<iseed>", type=int, default='4', help='integer seed for a pseudo-random number generator (default = 4)')
+parser.add_argument('-iseed', metavar="<iseed>", type=int, default=None, help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
 parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
 parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
@@ -121,12 +122,12 @@ parser.add_argument('--scatter', action="store_true", help='include scattering (
 parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
 parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - default: patchy beam')
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
+parser.add_argument('--showrfm', action="store_true", help='Option produce rfm .gif image')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
 npatch = args.npatch
 #iseed = args.iseed
-iseed = int(time.time()) # Using current time as seed to avoid repeating the same random number generation
 hmin = args.hmin
 hmax = args.hmax
 alpha = args.alpha
@@ -141,6 +142,12 @@ fanBeam = args.doFan
 hollowCone = args.doHC
 fileName = args.outfile
 
+if not args.iseed:
+    # Using current time as seed to avoid repeating the same random number generation
+    iseed = int(time.time())
+else:
+    iseed = args.iseed
+
 #====================================================================================================================================================
 #                                                        MAIN BODY: 
 #====================================================================================================================================================
@@ -150,11 +157,11 @@ fileName = args.outfile
 beam = []
 prof = []
 w10 = []
-res = 1e3
-t_res = P/res
-phase = np.linspace(-180, 180, num=res)
-max_freq = (nch - 1) * chbw + min_freq
-freq = np.linspace(min_freq, max_freq, nch) #channel frequency in GHz!!!
+res = 1e3 # resolution
+t_res = P/res # time-reso;ution
+phase = np.linspace(-180, 180, num=res) # rotation phase in degrees
+max_freq = (nch - 1) * chbw + min_freq # maximum frequency
+freq = np.linspace(min_freq, max_freq, nch) #channel frequencies in GHz!!!
 
 #=======================================
 #     1. Find the emission height:
@@ -165,7 +172,7 @@ H = bm.emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone)
 #========================================
 for i in np.arange(len(freq)):
     heights = bm.height_f(H, freq[i]) # frequency dependent H
-    pr, Z = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam)
+    pr, Z = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam, hollowCone)
     w10.append(bm.find_width(pr)) # Width at 10% of the peak 
     prof.append(pr)               # Profile for that frequency
     beam.append(Z)                # 2D beam 
@@ -258,13 +265,14 @@ if all(i > 10 for i in SN):
         #plt.ylim(0, 5)
         plt.grid()
         fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))"""
-    # Create a snr vs dm plot for visualization
-    snrfig = plt.figure()
-    plt.plot(dm_range, peaks_of_average)
-    plt.title('Best dm trial')
-    plt.xlabel('delta dm (pc cm^-3)')
-    plt.ylabel('SNR')
-    snrfig.savefig('SNR_DM.png')
+    if args.getPlot:
+        # Create a snr vs dm plot for visualization
+        snrfig = plt.figure()
+        plt.plot(dm_range, peaks_of_average)
+        plt.title('Best dm trial')
+        plt.xlabel('delta dm (pc cm^-3)')
+        plt.ylabel('SNR')
+        snrfig.savefig('SNR_DM.png')
 
     # Find the best dm (dm that maximises SNR)
     for i in range(len(peaks_of_average)):
@@ -300,7 +308,7 @@ if args.getPlot:
     #============================================
     xlos, ylos, thetalos = bm.los(alpha, beta, res)
     fig3 = plt.figure(figsize=(10,5))
-    ax3 = fig3.add_subplot(1,2,1)
+    ax31 = fig3.add_subplot(1,2,1)
     plt.plot(xlos, ylos, '+r')
     plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
     plt.xlabel('X (degrees)')
@@ -320,33 +328,37 @@ if args.getPlot:
     plt.ylim(y1,y2)
     plt.colorbar()
     # 1D plot
-    ax4 = fig3.add_subplot(1,2,2)
+    ax32 = fig3.add_subplot(1,2,2)
     plt.plot(phase, profile[0])
     plt.title('Profile at %.3f GHz' % freq[0])
     plt.xlim(-180, 180)
     plt.xlabel('Phase ')
     plt.ylabel('Intensity')
     fig3.savefig('beam_%.3f_GHz_.png' %freq[0]) 
-    """for bid in range(nch):
-        xlos, ylos, thetalos = bm.los(alpha, beta, res)
-        fig3 = plt.figure(figsize=(10,5))
-        ax3 = fig3.add_subplot(1,2,1)
-        plt.plot(xlos, ylos, '+r')
-        plt.imshow(beam[bid].T, extent=[-180, 180, 180, -180])
-        plt.xlabel('X (degrees)')
-        plt.title('Radio pulsar beam')
-        plt.ylabel('Y (degrees)')
-        # find zoomed extent for plot
-        plt.xlim(-40, 40)
-        plt.ylim(-40, 40)
-        plt.colorbar()
-        # 1D profile plot
-        ax4 = fig3.add_subplot(1,2,2)
-        plt.plot(phase, profile[bid])
-        plt.title('Profile at %.3f GHz' % freq[bid])
-        plt.xlim(-180, 180)
-        plt.ylim(0, 5)
-        plt.xlabel('Phase ')
-        plt.ylabel('Intensity')
-        fig3.savefig('beam_%.3f_GHz_.png' %freq[bid]) 
-        print 'Done!'"""
+    
+    if args.showrfm:
+        # show rfm on 2d beam plots
+        fig4 = plt.figure(figsize=(10,5))
+        ax41 = fig4.add_subplot(1,2,1)
+        for bid in range(nch):
+            xlos, ylos, thetalos = bm.los(alpha, beta, res)
+            fig4 = plt.figure(figsize=(10,5))
+            ax41 = fig4.add_subplot(1,2,1)
+            plt.plot(xlos, ylos, '+r')
+            plt.imshow(beam[bid].T, extent=[-180, 180, 180, -180])
+            plt.xlabel('X (degrees)')
+            plt.title('Radio pulsar beam')
+            plt.ylabel('Y (degrees)')
+            # find zoomed extent for plot
+            plt.xlim(-40, 40)
+            plt.ylim(-40, 40)
+            plt.colorbar()
+            # 1D profile plot
+            ax42 = fig4.add_subplot(1,2,2)
+            plt.plot(phase, profile[bid])
+            plt.title('Profile at %.3f GHz' % freq[bid])
+            plt.xlim(-180, 180)
+            plt.ylim(np.min(profile), np.max(profile))
+            plt.xlabel('Phase ')
+            plt.ylabel('Intensity')
+            fig4.savefig('beam_%.3f_GHz_.png' %freq[bid]) 

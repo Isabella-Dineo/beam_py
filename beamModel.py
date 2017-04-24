@@ -113,7 +113,7 @@ def los(alpha, beta, res):
 #====================================================================================================================================================
 #                                                       EMISSION HEIGHTS
 #====================================================================================================================================================
-def emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone):
+def emission_height(P, ncomp, iseed, hmin, hmax, fanBeam=None, hollowCone=None):
     """Function to determine emission heights given the period. If no emission height range
        is specified, default used for P < 0.15 is between [950, 1000] and between [20, 1000] 
        for P > 0.15.
@@ -228,7 +228,7 @@ def patch_width(P, heights):
 #====================================================================================================================================================
 #                                                       PATCH CENTER:
 #====================================================================================================================================================
-def patch_center(P, heights, npatch, iseed, fanBeam=False):
+def patch_center(P, heights, npatch, iseed, fanBeam=None, hollowCone=None):
     """Function find centres of the patches
        
        Args:
@@ -251,27 +251,31 @@ def patch_center(P, heights, npatch, iseed, fanBeam=False):
     centerx = []
     centery = []
     np.random.seed(iseed)
-#   Fan beam model:
-    if fanBeam is False:
-        theta = 2 * np.pi * np.random.random(len(heights) * npatch)
-    else:
+    
+    if hollowCone:
+        # Model hollow cone beam
+        npatch = 15 # just arbitrary to create a circular ring 
+        theta = 2 *np.arange(0, 2*np.pi, 2*np.pi/npatch)
+    if fanBeam:
+        # Model fan beam
         theta = 2 * np.pi * np.random.random(npatch)
+    else:
+        # Model patchy beam model by default
+        theta = 2 * np.pi * np.random.random(len(heights) * npatch)
+
     for j in range(len(heights)): #for each emission height (comp!)
-#       find the center of the patch
+        #find the center of the patch
         tempCenterX = []
         tempCenterY = []
 
-        if fanBeam is False:
-
+        if not fanBeam:
             for i in np.arange(npatch):
                 tempCenterX.append(opa[j] * np.sin(theta[j*npatch + i]))
                 tempCenterY.append(opa[j] * np.cos(theta[j*npatch + i]))
-
         else:
             for i in np.arange(npatch):
                 tempCenterX.append(opa[j] * np.sin(theta[i]))
                 tempCenterY.append(opa[j] * np.cos(theta[i]))
-
 
         centerx.append(tempCenterX)
         centery.append(tempCenterY)
