@@ -61,7 +61,7 @@ def mapphi(alpha, beta, phi):
     for i in np.arange(len(R)):
         if int(R[i]*100.0) == 180.0:
             R[i] = int(R[i]*100.0)/100.0
-        if R[i] != 0.0 and R[i] != 180.0 and alpha > 0.0:
+        elif R[i] != 0.0 and R[i] != 180.0 and alpha > 0.0:
             cosgamma[i] = (np.cos(np.deg2rad(alpha+beta)) - np.cos(np.deg2rad(alpha)) * cosR[i]) \
                   /(np.sin(np.deg2rad(alpha)) * np.sin(R[i]))
         else:
@@ -254,15 +254,15 @@ def patch_center(P, heights, npatch, iseed, fanBeam=None, hollowCone=None):
     
     if hollowCone:
         # Model hollow cone beam
-        npatch = 15 # just arbitrary to create a circular ring 
+        npatch = 18 # just arbitrary to create a circular ring 
         theta = 2 *np.arange(0, 2*np.pi, 2*np.pi/npatch)
-    if fanBeam:
+    elif fanBeam:
         # Model fan beam
         theta = 2 * np.pi * np.random.random(npatch)
     else:
         # Model patchy beam model by default
         theta = 2 * np.pi * np.random.random(len(heights) * npatch)
-
+   
     for j in range(len(heights)): #for each emission height (comp!)
         #find the center of the patch
         tempCenterX = []
