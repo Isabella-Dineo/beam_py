@@ -116,10 +116,11 @@ parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default=None, help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
 parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
-parser.add_argument('-outfile', metavar="<output file>", help="Write to file.")
+parser.add_argument('--outfile', action="store_true", help="Write delta dm to file.")
 parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
-parser.add_argument('--scatter', action="store_true", help='include scattering (default = None)')
 parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
+parser.add_argument('--scatter', action="store_true", help='include scattering (default = None)')
+parser.add_argument('--writeprofile', action="store_true", help='Option to write out profile array into a file profile.txt.')
 parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - default: patchy beam')
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 parser.add_argument('--showrfm', action="store_true", help='Option produce rfm .gif image')
@@ -140,7 +141,6 @@ chbw = args.chbw
 scr = args.scatter
 fanBeam = args.doFan
 hollowCone = args.doHC
-fileName = args.outfile
 
 if not args.iseed:
     # Using current time as seed to avoid repeating the same random number generation
@@ -217,29 +217,29 @@ SN = []
 if snr == None:
     profile = sc_prof
 else:
-    #rms = bm.noise_rms(snr, np.max(peaks))
     rms = bm.noise_rms(snr)                            # Determine the noise rms
     profile = bm.add_noise(sc_prof, rms, res)          # add noise to each profile
     for p in profile:
-       SN.append(bm.signal_to_noise(np.max(p), rms))   # snr for each of the profiles
-# YOU MAY NEED TO CHECK THE here before doing dm search instead of putting that in a loop/under condition
+       SN.append(bm.signal_to_noise(np.max(p), rms))   # snr for each of the profiles(to use later below)
+
+# Write out the profile into a file (scattered, with added noise, if specified)
+np.savetxt('profile_file.txt', np.array(profile))
+
 #==================================================================
 #      5. Fit a DM Curve:
 #==================================================================
-#if any(SN > 10):
+# Increase the resolution
 highres_phase = np.linspace(-180,180,10*res)
 resampled = np.zeros((int(nch),int(10*res)))
 for nfr in range(len(freq)):
     resampled[nfr] = sci_sig.resample(profile[nfr], int(10*res))
 
+# delta dm search only for profiles with snr above threshold
 if all(i > 10 for i in SN):
     average_profile = []
     peaks_of_average = []
-#    phase_bin0 = bm.find_phase_bin(profile[nch - 1])
-#    phase_bin1 = bm.find_phase_bin(profile[0])
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
     phase_bin1 = bm.find_phase_bin(resampled[0])
-#    dm_range = bm.find_delta_dm(P, profile, phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
     dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
     for dm_id in range(len(dm_range)):
         shifted_profile = []
@@ -250,7 +250,6 @@ if all(i > 10 for i in SN):
         plt.ylabel('Intensity')"""
         for freq_id in range(nch-1):
             bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/10.)
-#            shifted_profile.append(np.roll(profile[freq_id], bin_shift))
             shifted_profile.append(np.roll(resampled[freq_id], bin_shift))
             """plt.subplot(1,2,1)
             plt.plot(highres_phase, shifted_profile[freq_id])
@@ -280,9 +279,10 @@ if all(i > 10 for i in SN):
             best_dm = dm_range[i]
     
     # Write out important parameters into a file    
-    pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, rand_dm, best_dm])
-    f = open(fileName, 'a')
-    f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
+    if args.outfile:
+        pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, rand_dm, best_dm])
+        f = open('dm_dat.txt', 'a')
+        f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
 #==================================================================
 #                     PRODUCE PLOTS:
@@ -294,9 +294,7 @@ if args.getPlot:
     fig2, ax2 = plt.subplots()
     for k in np.arange(len(profile)):
         colormap = plt.cm.gist_ncar
-        #plt.gca().set_color_cycle([colormap(k+1)])
         ax2.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
-        #ax2.plot(phase, profile[k], label='frequency = %0.2f GHz' %freq[k])
 	plt.title('A sequence of %i pulse profile' %nch)
 	plt.xlabel('Phase (degrees)')
         plt.ylabel('Profile number')
@@ -350,8 +348,17 @@ if args.getPlot:
             plt.title('Radio pulsar beam')
             plt.ylabel('Y (degrees)')
             # find zoomed extent for plot
-            plt.xlim(-40, 40)
-            plt.ylim(-40, 40)
+            nonZero = np.where(beam[0]!= 0.0)
+            nzx_min = np.min(np.amin(nonZero,0))
+            nzy_min = np.min(np.amin(nonZero,1))
+            nzx_max = np.max(np.amax(nonZero,0))
+            nzy_max = np.max(np.amax(nonZero,1))
+            x1 = phase[nzx_min]
+            x2 = phase[nzx_max]
+            y1 = phase[nzy_min]
+            y2 = phase[nzy_max]
+            plt.xlim(x1,x2)
+            plt.ylim(y1,y2)
             plt.colorbar()
             # 1D profile plot
             ax42 = fig4.add_subplot(1,2,2)
