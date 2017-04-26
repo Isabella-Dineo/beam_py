@@ -2,6 +2,7 @@
 
 import numpy as np
 import argparse, os
+import time
 
 parser = argparse.ArgumentParser(prog='Run the beam code multiple times.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-f', metavar='<fileName>', type=str, default='outFile')
@@ -14,8 +15,9 @@ parser.add_argument('-snr', metavar='<SNR>', type=int, default=100, help='Signal
 parser.add_argument('-iseed', metavar='<seed>', type=int, default=None, help='Seed for the random munber generator.')
 parser.add_argument('-dmFile', metavar='<fileName>', type=str, default='psrcatdm.dat', help='File containing known dm values from psrcat (used for scattering).')
 parser.add_argument('--getPlot', action="store_true", default=True, help='Option to produce the beam plot.')
-parser.add_argument('--doFan', action="store_true", help='Option to produce the beam plot.')
 parser.add_argument('--scatter', action="store_true", default=False, help='Option to include scattering effects.')
+parser.add_argument('--doFan', action="store_true", help='Option to use the fanBea model.')
+parser.add_argument('--doHC', action="store_true", help='Option to use the hollow cone beam model.')
 args = parser.parse_args()
 filename = args.f
 iterations = args.it
@@ -25,10 +27,10 @@ bw = args.bw
 nch = args.nch
 snr = args.snr
 for i in range(iterations):
-    if args.iseed == None:
-        iseed = np.random.randint(0, 90012410)
-    else:
-        iseed = args.iseed
+    #if args.iseed == None:
+    #    iseed = int(time.time())
+    #else:
+    #    iseed = args.iseed
     
     if P == None:
         P = np.random.uniform(0.1, 2)
@@ -38,5 +40,5 @@ for i in range(iterations):
     nc = 4
     npatch = 4 
     os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
-               -snr %d -iseed %d -outfile %s --getPlot --doFan'\
-               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr, iseed, filename))
+               -snr %d --outfile --getPlot --doHC'\
+               % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr))
