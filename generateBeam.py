@@ -223,7 +223,8 @@ else:
        SN.append(bm.signal_to_noise(np.max(p), rms))   # snr for each of the profiles(to use later below)
 
 # Write out the profile into a file (scattered, with added noise, if specified)
-np.savetxt('profile_file.txt', np.array(profile))
+if args.writeprofile:
+    np.savetxt('profile_file.txt', np.array(profile))
 
 #==================================================================
 #      5. Fit a DM Curve:
