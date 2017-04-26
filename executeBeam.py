@@ -40,5 +40,5 @@ for i in range(iterations):
     nc = 4
     npatch = 4 
     os.system('generateBeam.py -alpha %.3f -beta %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
-               -snr %d --outfile --getPlot --doHC'\
+               -snr %d --outfile --doHC'\
                % (alpha, beta, P, fmin, bw, nch, nc, npatch, snr))
