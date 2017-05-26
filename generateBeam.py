@@ -123,7 +123,8 @@ parser.add_argument('--scatter', action="store_true", help='include scattering (
 parser.add_argument('--writeprofile', action="store_true", help='Option to write out profile array into a file profile.txt.')
 parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - default: patchy beam')
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
-parser.add_argument('--showrfm', action="store_true", help='Option produce rfm .gif image')
+parser.add_argument('--showrfm', action="store_true", help='Option to produce rfm .gif image')
+parser.add_argument('--diagnostic', action="store_true", help='Option to show diagnostic plots')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
@@ -243,28 +244,29 @@ if all(i > 10 for i in SN):
     phase_bin1 = bm.find_phase_bin(resampled[0])
     dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
     for dm_id in range(len(dm_range)):
-        shifted_profile = []
-        """fig1 = plt.figure(figsize=(10,5))
-        st = fig1.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
-        plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
-        plt.xlabel('phase (degrees)')
-        plt.ylabel('Intensity')"""
+        shifted_profiles = []
+        if args.diagnostic:
+            fig_dm = plt.figure(figsize=(10,5))
+            st = fig_dm.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
+            plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
+            plt.xlabel('phase (degrees)')
+            plt.ylabel('Intensity')
+            plt.xlim(-180,180)
+            plt.grid()
         for freq_id in range(nch-1):
             bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/10.)
-            shifted_profile.append(np.roll(resampled[freq_id], bin_shift))
-            """plt.subplot(1,2,1)
-            plt.plot(highres_phase, shifted_profile[freq_id])
-        plt.xlim(-180,180)
-        #plt.ylim(0, 5)
-        plt.grid()"""
-        average_profile.append(bm.avg_prof(shifted_profile))
+            shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
+            plt.subplot(1,2,1)
+            plt.plot(highres_phase, shifted_profiles[freq_id])
+        average_profile.append(bm.avg_prof(shifted_profiles))
         peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
-        """plt.subplot(1,2,2)
-        plt.plot(highres_phase, average_profile[dm_id])
-        plt.xlim(-180, 180)
-        #plt.ylim(0, 5)
-        plt.grid()
-        fig1.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))"""
+        if args.diagnostic:
+            plt.subplot(1,2,2)
+            plt.plot(highres_phase, average_profile[dm_id])
+            plt.xlim(-180, 180)
+            plt.grid()
+            fig_dm.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
+
     if args.getPlot:
         # Create a snr vs dm plot for visualization
         snrfig = plt.figure()
@@ -301,40 +303,40 @@ if args.getPlot:
         plt.ylabel('Profile number')
         plt.xlim(-180,180)
         plt.grid('on')
-    fig2.savefig('sequence.png')
-    #============================================
-    #    2D emission region:
-    #============================================
-    xlos, ylos, thetalos = bm.los(alpha, beta, res)
-    fig3 = plt.figure(figsize=(10,5))
-    ax31 = fig3.add_subplot(1,2,1)
-    plt.plot(xlos, ylos, '+r')
-    plt.imshow(beam[0].T, extent=[-180, 180, 180, -180])
-    plt.xlabel('X (degrees)')
-    plt.title('Beam')
-    plt.ylabel('Y (degrees)')
-    # find zoomed extent for plot
-    nonZero = np.where(beam[0]!= 0.0)
-    nzx_min = np.min(np.amin(nonZero,0))
-    nzy_min = np.min(np.amin(nonZero,1))
-    nzx_max = np.max(np.amax(nonZero,0))
-    nzy_max = np.max(np.amax(nonZero,1))
-    x1 = phase[nzx_min]
-    x2 = phase[nzx_max]
-    y1 = phase[nzy_min]
-    y2 = phase[nzy_max]
-    plt.xlim(x1,x2)
-    plt.ylim(y1,y2)
-    plt.colorbar()
-    # 1D plot
-    ax32 = fig3.add_subplot(1,2,2)
-    plt.plot(phase, profile[0])
-    plt.title('Profile at %.3f GHz' % freq[0])
-    plt.xlim(-180, 180)
-    plt.xlabel('Phase ')
-    plt.ylabel('Intensity')
-    fig3.savefig('beam_%.3f_GHz_.png' %freq[0]) 
-    
+        #============================================
+        #    2D emission region:
+        #============================================
+        xlos, ylos, thetalos = bm.los(alpha, beta, res)
+        fig3 = plt.figure(figsize=(10,5))
+        ax31 = fig3.add_subplot(1,2,1)
+        plt.plot(xlos, ylos, '+r')
+        plt.imshow(beam[k].T, extent=[-180, 180, 180, -180])
+        plt.xlabel('X (degrees)')
+        plt.title('Beam')
+        plt.ylabel('Y (degrees)')
+        # find zoomed extent for plot
+        nonZero = np.where(beam[k]!= 0.0)
+        nzx_min = np.min(np.amin(nonZero,0))
+        nzy_min = np.min(np.amin(nonZero,1))
+        nzx_max = np.max(np.amax(nonZero,0))
+        nzy_max = np.max(np.amax(nonZero,1))
+        x1 = phase[nzx_min]
+        x2 = phase[nzx_max]
+        y1 = phase[nzy_min]
+        y2 = phase[nzy_max]
+        plt.xlim(x1,x2)
+        plt.ylim(y1,y2)
+        plt.colorbar()
+        # 1D plot
+        ax32 = fig3.add_subplot(1,2,2)
+        plt.plot(phase, profile[0])
+        plt.title('Profile at %.3f GHz' % freq[0])
+        plt.xlim(-180, 180)
+        plt.xlabel('Phase ')
+        plt.ylabel('Intensity')
+        fig3.savefig('beam_%.3f_GHz_.png' %freq[0]) 
+        fig2.savefig('sequence.png')
+
     if args.showrfm:
         # show rfm on 2d beam plots
         fig4 = plt.figure(figsize=(10,5))
@@ -349,7 +351,7 @@ if args.getPlot:
             plt.title('Radio pulsar beam')
             plt.ylabel('Y (degrees)')
             # find zoomed extent for plot
-            nonZero = np.where(beam[0]!= 0.0)
+            nonZero = np.where(beam[bid]!= 0.0)
             nzx_min = np.min(np.amin(nonZero,0))
             nzy_min = np.min(np.amin(nonZero,1))
             nzx_max = np.max(np.amax(nonZero,0))
