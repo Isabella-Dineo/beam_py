@@ -11,6 +11,7 @@ parser.add_argument('-f', nargs='+', type=str, help='files containing dm in 1 co
 parser.add_argument('-o', default='outFile.stats', type=str, help='outfile to write mean and variance.')
 parser.add_argument('-model', default='patchy', type=str, help='Model used for the dm simulation.')
 parser.add_argument('-fcen', type=float, help='Centre frequency (GHz).')
+parser.add_argument('-outfile', type=str, help='png file name title.')
 args = parser.parse_args()
 
 
@@ -28,10 +29,12 @@ for fid in range(len(files)):
     f = open(args.o, 'a')
     f.write(' '.join([str(item) for item in mean_var]) + ' \n')
     # Plot a dm distribution
-    fig = plt.figure(figsize=(10,10))
+    fig = plt.figure(figsize=(10, 10))
     plt.hist(dat, bins=100)
-    plt.title('Distribution of DMs_%s : Mean %.5f, Var %.5f' %(files[fid], nu, var))
-    fig.savefig(files[fid] + str(fid) + '.png')
+    plt.title('$\Delta$DM distribution')
+#    plt.xlim(-0.5, 0.5)
+    plt.xlabel(r'$\Delta$DM')
+    fig.savefig(args.o + str(fid) + '.png')
     plt.show()
 print 'Mean = ', mean
 print 'Varience = ', varience

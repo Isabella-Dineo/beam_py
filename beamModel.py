@@ -457,7 +457,7 @@ def scatter(train, bf):
     # normalise the profile:
     profint = np.sum(train) # integral / area of the profile 
     convint = np.sum(conv) # integral / area of the scattered profile
-    sc_prof = conv * (profint / convint)
+    sc_prof = conv * (profint / float(convint))
     out = sc_prof[0 : len(train) + 1]
 
     return out
@@ -629,7 +629,7 @@ def find_phase_bin(prof):
 
 # Find a phase/time corresponding to the peak of the profile
 def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
-    """Function to determine a range of dispersion measures 
+    """Function to determine a range of dispersion measures to try.
        
        Args:
        -----

@@ -66,7 +66,7 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     centerx, centery = bm.patch_center(P, heights, npatch, iseed, fanBeam, hollowCone)
 #   Get the ofset due to abberation:
     ab_xofset, ab_yofset = bm.aberration(heights, P, alpha)
-    #   Find the 1D and 2D profile:
+#   Find the 1D and 2D profile:
     for cid, comp in enumerate(heights):
 #       widths for circular patches:        
         sigmax = patchwidths[cid]
@@ -231,10 +231,10 @@ if args.writeprofile:
 #      5. Fit a DM Curve:
 #==================================================================
 # Increase the resolution
-highres_phase = np.linspace(-180,180,10*res)
-resampled = np.zeros((int(nch),int(10*res)))
+highres_phase = np.linspace(-180,180,1000*res)
+resampled = np.zeros((int(nch),int(1000*res)))
 for nfr in range(len(freq)):
-    resampled[nfr] = sci_sig.resample(profile[nfr], int(10*res))
+    resampled[nfr] = sci_sig.resample(profile[nfr], int(1000*res))
 
 # delta dm search only for profiles with snr above threshold
 if all(i > 10 for i in SN):
@@ -263,6 +263,7 @@ if all(i > 10 for i in SN):
         if args.diagnostic:
             plt.subplot(1,2,2)
             plt.plot(highres_phase, average_profile[dm_id])
+            plt.ylim(np.min(profile), np.max(profile))
             plt.xlim(-180, 180)
             plt.grid()
             fig_dm.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
@@ -315,7 +316,7 @@ if args.getPlot:
         plt.title('Beam')
         plt.ylabel('Y (degrees)')
         # find zoomed extent for plot
-        nonZero = np.where(beam[k]!= 0.0)
+        nonZero = np.where(beam[0]!= 0.0)    # Set the maximum zoom to beam at lowest frequency
         nzx_min = np.min(np.amin(nonZero,0))
         nzy_min = np.min(np.amin(nonZero,1))
         nzx_max = np.max(np.amax(nonZero,0))
@@ -331,6 +332,7 @@ if args.getPlot:
         ax32 = fig3.add_subplot(1,2,2)
         plt.plot(phase, profile[0])
         plt.title('Profile at %.3f GHz' % freq[0])
+        plt.ylim(np.min(profile), np.max(profile))
         plt.xlim(-180, 180)
         plt.xlabel('Phase ')
         plt.ylabel('Intensity')
@@ -351,7 +353,7 @@ if args.getPlot:
             plt.title('Radio pulsar beam')
             plt.ylabel('Y (degrees)')
             # find zoomed extent for plot
-            nonZero = np.where(beam[bid]!= 0.0)
+            nonZero = np.where(beam[0]!= 0.0)     # set the maximum zoom to beam at lowest frequency
             nzx_min = np.min(np.amin(nonZero,0))
             nzy_min = np.min(np.amin(nonZero,1))
             nzx_max = np.max(np.amax(nonZero,0))
