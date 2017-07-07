@@ -57,7 +57,7 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     prof_los = np.zeros_like(gauss)
 
 #   find the width of the patches:
-    patchwidths = bm.patch_width(P, heights)
+    patchwidths = bm.patch_width(P, heights, hollowCone)
 #   An arbitrary peak of the profile:
     peakAmp = 1.
 #   Get the line of sight:
@@ -177,7 +177,6 @@ for i in np.arange(len(freq)):
     w10.append(bm.find_width(pr)) # Width at 10% of the peak 
     prof.append(pr)               # Profile for that frequency
     beam.append(Z)                # 2D beam 
-
 #==========================================
 #     3. Scatter the line of sight profile: 
 #==========================================

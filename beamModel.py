@@ -138,7 +138,6 @@ def emission_height(P, ncomp, iseed, hmin, hmax, fanBeam=None, hollowCone=None):
         num_H = 1
     else:
         num_H = ncomp # number of discrete emission height
-
 #   If height range is not specified:
     if hmin == None and hmax == None:
 
@@ -155,7 +154,7 @@ def emission_height(P, ncomp, iseed, hmin, hmax, fanBeam=None, hollowCone=None):
 
 #   For specified height range:
     else: H = np.random.uniform(hmin, hmax, size=num_H)
-
+    
     return H
 
 #======================
@@ -204,7 +203,7 @@ def rho(P, heights):
 #====================================================================================================================================================
 #                                                       PATCH WIDTH
 #====================================================================================================================================================
-def patch_width(P, heights):
+def patch_width(P, heights, hollowCone=None):
     """Function to calculate the width of a patchy emission region 
        within a pulsar beam at a given height.
     
@@ -221,8 +220,11 @@ def patch_width(P, heights):
     """
 
 #   width of the patch (eqn 3, KJ2007):
-    patchwidths = 2.45 * 0.2 * np.sqrt(heights / ( 10 * P))
-
+    if hollowCone:
+        # Smaller patches for the hollow cone (~2.5 smaller than kj07)
+        patchwidths = 0.2 * np.sqrt(heights / ( 10 * P))
+    else:
+        patchwidths = 2.45 * 0.2 * np.sqrt(heights / ( 10 * P))
     return patchwidths
 
 #====================================================================================================================================================
@@ -254,7 +256,7 @@ def patch_center(P, heights, npatch, iseed, fanBeam=None, hollowCone=None):
     
     if hollowCone:
         # Model hollow cone beam
-        npatch = 18 # just arbitrary to create a circular ring 
+        npatch = 40 # just arbitrary to create a circular ring 
         theta = 2 *np.arange(0, 2*np.pi, 2*np.pi/npatch)
     elif fanBeam:
         # Model fan beam
