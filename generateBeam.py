@@ -188,7 +188,7 @@ if not scr:
     rand_dm = 0.0   # random Dm for scattering (time_scale : No scattering)
 else:
     sc_prof = []
-    rand_dm = bm.getadm(args.dmFile, iseed, nbins=20, n=1) # random dm value from a dist. of known psr dm
+    rand_dm = bm.getadm(args.dmFile, iseed, nbins=500, n=1) # random dm value from a dist. of known psr dm
     # Follow the scattering routine:
     for pid in np.arange(len(prof)):
         # Compute a train of pulses
