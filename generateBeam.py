@@ -193,6 +193,7 @@ else:
         rand_dm = bm.getadm(args.dmFile, iseed, nbins=20, n=1) # random dm value from a dist. of known psr dm
     else:
         rand_dm = args.dm
+    rand_dm = bm.getadm(args.dmFile, iseed, nbins=500, n=1) # random dm value from a dist. of known psr dm
     # Follow the scattering routine:
     for pid in np.arange(len(prof)):
         # Compute a train of pulses
