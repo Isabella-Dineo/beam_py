@@ -116,6 +116,7 @@ parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default=None, help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
 parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
+parser.add_argument('-dm', metavar="<dm>", type=int, help='A dm to use for scattering.')
 parser.add_argument('--outfile', action="store_true", help="Write delta dm to file.")
 parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
 parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
@@ -188,7 +189,10 @@ if not scr:
     rand_dm = 0.0   # random Dm for scattering (time_scale : No scattering)
 else:
     sc_prof = []
-    rand_dm = bm.getadm(args.dmFile, iseed, nbins=20, n=1) # random dm value from a dist. of known psr dm
+    if not args.dm:
+        rand_dm = bm.getadm(args.dmFile, iseed, nbins=20, n=1) # random dm value from a dist. of known psr dm
+    else:
+        rand_dm = args.dm
     # Follow the scattering routine:
     for pid in np.arange(len(prof)):
         # Compute a train of pulses
@@ -297,12 +301,13 @@ if args.getPlot:
     fig2, ax2 = plt.subplots()
     for k in np.arange(len(profile)):
         colormap = plt.cm.gist_ncar
-        ax2.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k])
+        ax2.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k], color='black')
 	plt.title('A sequence of %i pulse profile' %nch)
 	plt.xlabel('Phase (degrees)')
-        plt.ylabel('Profile number')
+        plt.ylabel('Profiles')
         plt.xlim(-180,180)
-        plt.grid('on')
+        plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
+        plt.grid('on', which='both')
         #============================================
         #    2D emission region:
         #============================================
@@ -329,7 +334,7 @@ if args.getPlot:
         plt.colorbar()
         # 1D plot
         ax32 = fig3.add_subplot(1,2,2)
-        plt.plot(phase, profile[0])
+        plt.plot(phase, profile[0], color='blue')
         plt.title('Profile at %.3f GHz' % freq[0])
         plt.ylim(np.min(profile), np.max(profile))
         plt.xlim(-180, 180)
