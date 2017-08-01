@@ -35,12 +35,16 @@ for fid in range(len(files)):
     fig = plt.figure(figsize=(10, 10))
     plt.hist(dat, bins=100)
     plt.yscale('log', nonposy='clip')
+    plt.title('$\Delta$DM distribution: ' + str(args.o) + ' band', fontsize=18)
+    plt.xlim(-0.075, 0.075)
     plt.title('$\Delta$DM distribution: ' + str(args.o) + ' band')
     plt.xlim(-0.08, 0.08)
     #if abs(np.max(dat)) > abs(np.min(dat)):
     #    plt.xlim(-np.max(dat), np.max(dat))
     #elif abs(np.max(dat)) < abs(np.min(dat)):
     #    plt.xlim(-abs(np.min(dat)), abs(np.min(dat)))
+    plt.xlabel(r'$\Delta$DM', fontsize=18)
+    plt.ylabel('log(samples)', fontsize=18)
     plt.xlabel(r'$\Delta$DM')
     plt.ylabel('log(samples)')
     fig.savefig(args.o + str(fid) + '.png')
