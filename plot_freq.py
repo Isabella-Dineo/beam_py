@@ -8,19 +8,17 @@ parser.add_argument('-f', type=str, help="A file containing a mean, var, skew, k
 args = parser.parse_args()
 
 # Load the txt:
-m, v, s, k = np.loadtxt(args.f, unpack=True)
-print v
+stats = np.loadtxt(args.f)
 # Define the center frequencies
-fc = np.array([50, 150, 200, 1400])
-#fc = np.array([150,50,1400, 200])
+freq = stats[:, 0]
+var = stats[:, 2]
+print 'freq', stats[:,0] 
+print 'var', stats[:,2]
 
 fig = plt.figure()
-#plt.errorbar(fc, v, yerr=np.sqrt(v), fmt='o')
-plt.plot(np.log10(fc), np.log10(np.sqrt(v)), 'ko')
-plt.xlabel(r'$log(\nu_{c})$')
-plt.ylabel(r'$log (\Delta DM_{var}$)')
-#plt.xscale('log', nonposy='clip')
-#plt.title(r'Mean $\Delta DM$ as a funtion of center frequency')
-plt.savefig('meandm_freq_pc_noscr.png')
+plt.plot(np.log10(stats[:,0]), np.log10(stats[:,2]), 'k.')
+plt.xlabel(r'$log(\nu_{c})$', fontsize=18)
+plt.ylabel(r'$log (\sigma^2_{\Delta DM}$)', fontsize=18)
+plt.savefig('var_freq_hc_noscr.png')
 plt.show()
 
