@@ -239,52 +239,122 @@ highres_phase = np.linspace(-180,180,1000*res)
 resampled = np.zeros((int(nch),int(1000*res)))
 for nfr in range(len(freq)):
     resampled[nfr] = sci_sig.resample(profile[nfr], int(1000*res))
-
 # delta dm search only for profiles with snr above threshold
+#----------------- FIRST ITERATION --------------------------------
+# Find a region that contain the best DM
 if all(i > 10 for i in SN):
-    average_profile = []
+    #average_profile = []
     peaks_of_average = []
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
     phase_bin1 = bm.find_phase_bin(resampled[0])
     dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
+    print "First iterationd: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
+    print "dm step:", (dm_range[1]-dm_range[0])
     for dm_id in range(len(dm_range)):
         shifted_profiles = []
         if args.diagnostic:
-            fig_dm = plt.figure(figsize=(10,5))
-            st = fig_dm.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
+            fig_dm1 = plt.figure(figsize=(10,5))
+            #st = fig_dm.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
             plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
             plt.xlabel('phase (degrees)')
             plt.ylabel('Intensity')
-            plt.xlim(-180,180)
+            plt.xlim(-75,75)
             plt.grid()
         for freq_id in range(nch-1):
-            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/10.)
+            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/1000.) # Res increased by 1000 more bins
             shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
-            plt.subplot(1,2,1)
-            plt.plot(highres_phase, shifted_profiles[freq_id])
-        average_profile.append(bm.avg_prof(shifted_profiles))
-        peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
+            #plt.subplot(1,2,1)
+            plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id)
+        #average_profile.append(bm.avg_prof(shifted_profiles))
+        #peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
+        average = bm.avg_prof(shifted_profiles)
+        peaks_of_average.append(bm.find_peak(average))
+#        if args.diagnostic:
+#            plt.subplot(1,2,2)
+#            plt.plot(highres_phase, average_profile[dm_id])
+#            plt.ylim(np.min(profile), np.max(profile))
+#            plt.xlim(-100, 100)
+#            plt.grid()
         if args.diagnostic:
-            plt.subplot(1,2,2)
-            plt.plot(highres_phase, average_profile[dm_id])
-            plt.ylim(np.min(profile), np.max(profile))
-            plt.xlim(-180, 180)
-            plt.grid()
-            fig_dm.savefig('Dm_trial_DM_%d_%.5f.png' %(dm_id, dm_range[dm_id]))
-
+            if args.doHC:
+                fig_dm1.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+            else:
+                fig_dm1.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
     if args.getPlot:
         # Create a snr vs dm plot for visualization
-        snrfig = plt.figure()
-        plt.plot(dm_range, peaks_of_average)
+        snrfig1 = plt.figure()
+        plt.plot(dm_range, peaks_of_average, '.')
         plt.title('Best dm trial')
         plt.xlabel('delta dm (pc cm^-3)')
         plt.ylabel('SNR')
-        snrfig.savefig('SNR_DM.png')
+        if args.doHC:
+            snrfig1.savefig('SNR_DM_HC_seed_%f_1.png' %(iseed))
+        else:
+            snrfig1.savefig('SNR_DM_KJ07_seed_%f_1.png' %(iseed))
+#----------------- SECOND ITERATION ----------------------------
+# Search around this region for a best dm
+dm_bin = bm.find_phase_bin(peaks_of_average) # find the bin where the SNR-DM curve peak (best DM from the 1st iteration)
+#binshift = bm.delay(freq[-1], freq[0], 1, t_res/1000)
+#dm_step = 1/float(binshift)
+# print dm_range[dm_bin-1], dm_range[dm_bin],  dm_range[dm_bin+1], dm_bin
+# dm_search = np.arange(dm_range[dm_bin] - 100*dm_step,dm_range[dm_bin] + 100*dm_step ,dm_step)
+dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[dm_bin + 1], 200) # search for the range to try
+dm_range = dm_search # set a new range
+print "Second iterationd: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
+print "Step:", (dm_range[1]-dm_range[0])
+
+if all(i > 10 for i in SN):
+    #average_profile = []
+    peaks_of_average = []
+#    phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
+#    phase_bin1 = bm.find_phase_bin(resampled[0])
+    # dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
+    for dm_id in range(len(dm_range)):
+        shifted_profiles = []
+#        if args.diagnostic:
+#            fig_dm2 = plt.figure(figsize=(10,5))
+#            #st = fig_dm.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
+#            plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
+#            plt.xlabel('phase (degrees)')
+#            plt.ylabel('Intensity')
+#            plt.xlim(-180,180)
+#            plt.grid()
+        for freq_id in range(nch-1):
+            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/1000.) # Res increased by 1000 more bins
+            shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
+#            plt.subplot(1,2,1)
+#            plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id)
+        #average_profile.append(bm.avg_prof(shifted_profiles))
+        #peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
+        average = bm.avg_prof(shifted_profiles)
+        peaks_of_average.append(bm.find_peak(average))
+#        if args.diagnostic:
+#            plt.subplot(1,2,2)
+#            plt.plot(highres_phase, average_profile[dm_id])
+#            plt.ylim(np.min(profile), np.max(profile))
+#            plt.xlim(-100, 100)
+#            plt.grid()
+#            if args.doHC:
+#                fig_dm2.savefig('Dm_trial_HC_seed_%f_DM_%.5f_1.png' %(iseed,dm_range[dm_id]))
+#            else:
+#                fig_dm2.savefig('Dm_trial_KJ07_seed_%f_DM_%.5f_1.png' %(iseed,dm_range[dm_id]))
+    if args.getPlot:
+        # Create a snr vs dm plot for visualization
+        snrfig2 = plt.figure()
+        plt.plot(dm_range, peaks_of_average, '.')
+        plt.title('Best dm trial')
+        plt.xlabel('delta dm (pc cm^-3)')
+        plt.ylabel('SNR')
+        if args.doHC:
+            snrfig2.savefig('SNR_DM_HC_seed_%f_2.png' %(iseed))
+        else:
+            snrfig2.savefig('SNR_DM_KJ07_seed_%f_2.png' %(iseed))
 
     # Find the best dm (dm that maximises SNR)
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
             best_dm = dm_range[i]
+            print "Best dm = ", best_dm
     
     # Write out important parameters into a file    
     if args.outfile:
@@ -303,10 +373,10 @@ if args.getPlot:
     for k in np.arange(len(profile)):
         colormap = plt.cm.gist_ncar
         ax2.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k], color='black')
-	plt.title('A sequence of %i pulse profile' %nch)
+	plt.title('Profile evolution with frequency' )
 	plt.xlabel('Phase (degrees)')
-        plt.ylabel('Profiles')
-        plt.xlim(-180,180)
+        plt.ylabel('Frequency (30 - 80 MHz)')
+        plt.xlim(-50,50)
         plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
         plt.grid('on', which='both')
         #============================================
@@ -341,8 +411,12 @@ if args.getPlot:
         plt.xlim(-180, 180)
         plt.xlabel('Phase ')
         plt.ylabel('Intensity')
-        fig3.savefig('beam_%.3f_GHz_.png' %freq[0]) 
-        fig2.savefig('sequence.png')
+        if args.doHC:
+            suffix = 'HC'
+        else:
+            suffix = 'KJ07'
+        fig2.savefig('sequence_%s_%d.png' %(suffix, int(iseed)))
+        fig3.savefig('beam_%.3f_GHz_%s_%d_.png' %(freq[0], suffix, int(iseed)))
 
     if args.showrfm:
         # show rfm on 2d beam plots
@@ -378,4 +452,8 @@ if args.getPlot:
             plt.ylim(np.min(profile), np.max(profile))
             plt.xlabel('Phase ')
             plt.ylabel('Intensity')
-            fig4.savefig('beam_%.3f_GHz_.png' %freq[bid]) 
+            if args.doHC:
+                suffix = 'HC'
+            else:
+                suffix = 'KJ07'
+            fig4.savefig('beam_%.3f_GHz_%s_%d_.png' %(freq[bid], suffix, int(iseed))) 
