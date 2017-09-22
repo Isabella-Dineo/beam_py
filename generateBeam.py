@@ -6,7 +6,7 @@
 import beamModel as bm
 import numpy as np
 import argparse
-import time
+import time, os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -248,8 +248,8 @@ if all(i > 10 for i in SN):
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
     phase_bin1 = bm.find_phase_bin(resampled[0])
     dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
-    print "First iterationd: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
-    print "dm step:", (dm_range[1]-dm_range[0])
+#    print "First iteration: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
+#    print "dm step:", (dm_range[1]-dm_range[0])
     for dm_id in range(len(dm_range)):
         shifted_profiles = []
         if args.diagnostic:
@@ -300,8 +300,8 @@ dm_bin = bm.find_phase_bin(peaks_of_average) # find the bin where the SNR-DM cur
 # dm_search = np.arange(dm_range[dm_bin] - 100*dm_step,dm_range[dm_bin] + 100*dm_step ,dm_step)
 dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[dm_bin + 1], 200) # search for the range to try
 dm_range = dm_search # set a new range
-print "Second iterationd: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
-print "Step:", (dm_range[1]-dm_range[0])
+#print "Second iterationd: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
+#print "Step:", (dm_range[1]-dm_range[0])
 
 if all(i > 10 for i in SN):
     #average_profile = []
@@ -354,11 +354,16 @@ if all(i > 10 for i in SN):
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
             best_dm = dm_range[i]
-            print "Best dm = ", best_dm
+#            print "Best dm = ", best_dm
     
     # Write out important parameters into a file    
     if args.outfile:
-        pulsarParams = np.asarray([P, alpha, beta, w10[0], w10[-1], iseed, rand_dm, best_dm])
+        if args.doHC:
+            model = 'Hollow_cone'
+        else:
+            model = 'Patchy_beam'
+        pulsarParams = np.asarray([model, min_freq, chbw, nch, P, alpha, beta, \
+                                  iseed, rand_dm, best_dm])
         f = open('dm_dat.txt', 'a')
         f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
@@ -457,3 +462,10 @@ if args.getPlot:
             else:
                 suffix = 'KJ07'
             fig4.savefig('beam_%.3f_GHz_%s_%d_.png' %(freq[bid], suffix, int(iseed))) 
+# Clear up 
+cwd = os.getcwd()
+folder = '/' + str(iseed)
+new_directory = cwd + folder
+os.mkdir(new_directory)
+files_to_move = '*%s*.png' %(str(iseed))
+os.system('mv %s %s' %(files_to_move, new_directory))
