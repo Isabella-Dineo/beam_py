@@ -53,7 +53,7 @@ for fid in range(len(files)):
     #    plt.xlim(-abs(np.min(dat)), abs(np.min(dat)))
     plt.xlabel(r'$\Delta$DM', fontsize=18)
     plt.ylabel('log(samples)', fontsize=18)
-    plt.xlabel(r'$\Delta$DM')
+    plt.xlabel(r'$\Delta$DM (pc cm$^{-3}$) ')
     plt.ylabel('log(samples)')
  
     # Fitting a bimodal distribution:
