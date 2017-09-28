@@ -27,11 +27,11 @@ bw = args.bw
 nch = args.nch
 snr = args.snr
 for i in range(iterations):
-    #if args.iseed == None:
-    #    iseed = int(time.time())
-    #else:
-    #    iseed = args.iseed
-    
+    if args.iseed == None:
+        iseed = int(time.time())
+    else:
+        iseed = args.iseed
+    np.random.seed(iseed) 
     if P == None:
         P = np.random.uniform(0.1, 2)
   
