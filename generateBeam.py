@@ -90,9 +90,30 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
             else:
                 Z += distance * np.exp(-((X - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (Y - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
 #   1D profile from 2D patch, closest to the line of sight (select nearest neighbors):
-    ZxIdx = np.array((xlos-xmin)/dx, dtype=int) # x index
-    ZyIdx = np.array((ylos-ymin)/dy, dtype=int) # y index
-    prof = Z[ZxIdx, ZyIdx]
+#    ZxIdx = np.array((xlos-xmin)/dx, dtype=int) # x index
+#    ZyIdx = np.array((ylos-ymin)/dy, dtype=int) # y index
+#    prof = Z[ZxIdx, ZyIdx]
+    prof = np.zeros((res))
+    for i in range(res):
+        for cid, comp in enumerate(heights):
+            #       widths for circular patches:        
+            sigmax = patchwidths[cid]
+            sigmay = patchwidths[cid]
+
+#       center of the patch:
+            patchCenterX = centerx[cid]
+            patchCenterY = centery[cid]
+            for pc in zip(patchCenterX, patchCenterY):
+                distance = (np.sqrt((xlos[i] - pc[0])**2 + (ylos[i] - pc[1])**2))/sigmax
+                distance[np.where(distance > 3.0)] = 0.0
+                distance[np.where(distance != 0.0)] = peakAmp
+                if not do_ab:
+                    prof[i] += distance * np.exp(-((xlos[i] - pc[0])**2 / (2 * sigmax**2) + (ylos[i] - pc[1])**2 / (2 * sigmay**2)))
+                else:
+                    prof[i] += distance * np.exp(-((xlos[i] - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (ylos[i] - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
+
+
+
     
     return prof, Z
 
