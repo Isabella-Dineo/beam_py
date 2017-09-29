@@ -376,15 +376,17 @@ if all(i > 10 for i in SN):
         plt.plot(dm_range_2, peaks_of_average, '.')
         if best_dm:
             plt.axvline(x=best_dm, color='r', ymax=np.max(peaks_of_average))
+            plt.annotate('annotate', xy=(best_dm, peaks_of_average[i]), xytext=(np.min(peaks_of_average), 0.01),\
+            arrowprops=dict(facecolor='black', shrink=0.05))
         plt.title('Best dm trial')
         plt.xlabel('delta dm (pc cm^-3)')
         plt.ylabel('SNR')
         if args.doHC:
-            snrfig2.savefig('SNR_DM_HC_seed_%d_2.png' %(iseed))
+            snrfig2.savefig('SNR_DM_HC_seed_%d_bestDM_%.3f_2.png' %(iseed, best_dm))
             snrfig2.clear()
             plt.close(snrfig2)
         else:
-            snrfig2.savefig('SNR_DM_KJ07_seed_%d_2.png' %(iseed))
+            snrfig2.savefig('SNR_DM_KJ07_seed_%d_bestDm_%.3f_2.png' %(iseed, best_dm))
             snrfig2.clear()
             plt.close(snrfig2)
 
