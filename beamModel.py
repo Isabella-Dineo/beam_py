@@ -578,11 +578,13 @@ def add_noise(prof, rms, res):
 
     """
     peak = find_peak(prof)
-    noise = np.random.normal(0, rms, int(res))
-    noisy_prof = np.asarray(prof).T
-    for i in range(np.shape(prof)[0]):
-        noisy_prof[:,i] += noise
-    noisy_prof = noisy_prof.T
+    print 'Shape of profile array is: ', np.shape(prof)
+    noise = np.random.normal(0, rms, np.shape(prof))
+    noisy_prof = prof + noise
+#    noisy_prof = np.asarray(prof).T
+#    for i in range(np.shape(prof)[0]):
+#        noisy_prof[:,i] += noise
+#    noisy_prof = noisy_prof.T
     return noisy_prof
 
 
@@ -630,19 +632,14 @@ def find_phase_bin(prof):
 
 
 # Find a phase/time corresponding to the peak of the profile
-def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
+def find_delta_dm(freq_ref, freq, this_width, P):
     """Function to determine a range of dispersion measures to try.
        
        Args:
        -----
-       P          : rotation period (seconds)
-       prof       : profile (numpy array)
-       phase      : rotation phase (numpy array)
        freq_ref   : reference frequecy (in GHz)
        freq       : frequency to shift (in GHz)
-       phase_bin0 : phase bin corresponding to the peak of the profile at max frequency (or reference frequency) (integer)
-       phase_bin1 : phase bin corresponding to the peak of the profile at min frequency (integer)
-
+       this_width : W, the estimated width of our profiles
        Returns:
        --------
        delta_dm   : a range of dispersion measures to try (numpy array)
@@ -667,10 +664,8 @@ def find_delta_dm(P, prof, phase, phase_bin0, phase_bin1, freq_ref, freq, nch):
 #    #delta_dm = np.linspace(-100. * dm, 100. * dm , num=20)# try only 20 for now
 #    #print 'delta dm:', delta_dm
 #   ============ FIND A DM THAT WOULD SMEAR THE PROFILES ACROSS 100 DEGREES ==========   
-    phase_at_peak0 = phase[phase_bin0] # Phase at which the max freq profile peaks
-    phase_at_peak1 = phase[phase_bin1] # Phase at which the min freq profile peaks
     D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    delta_t = 100/360.0 * P  
+    delta_t = this_width/360.0 * P  
     dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
     delta_dm = np.linspace(-0.5*dm, dm*0.5 , num=20)
     return delta_dm

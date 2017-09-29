@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as sci_sig
 import scipy.stats as stats
 from matplotlib.ticker import MultipleLocator
-
+import sys
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
 #==============================================================================================================================================
@@ -58,6 +58,14 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
 
 #   find the width of the patches:
     patchwidths = bm.patch_width(P, heights, hollowCone)
+#   find the highest height
+    maxheight = np.max(heights)
+#   find opening angle for maximum height
+    opa_max = bm.rho(P, maxheight)
+#   find profile width using Gil formula
+    sin2W4 = (np.sin(np.deg2rad(opa_max))**2-np.sin(np.deg2rad(beta/2.0))**2)/ (np.sin(np.deg2rad(alpha))*np.sin(np.deg2rad(alpha+beta)))
+    W = 4. * np.rad2deg(np.arcsin(np.sqrt(sin2W4)))
+    print 'Expected profile width in degrees: ', W
 #   An arbitrary peak of the profile:
     peakAmp = 1.
 #   Get the line of sight:
@@ -94,7 +102,11 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
 #    ZyIdx = np.array((ylos-ymin)/dy, dtype=int) # y index
 #    prof = Z[ZxIdx, ZyIdx]
     prof = np.zeros(int(res))
-    for i in range(int(res)):
+# Find the appropriate range to fill the profile
+# First converst our expected width W into bins
+    halfbinsW = int(W/360. * res/2.)
+    profilerange = range(int(res/2)-halfbinsW, int(res/2)+halfbinsW, 1)
+    for i in profilerange:
         for cid, comp in enumerate(heights):
             #       widths for circular patches:        
             sigmax = patchwidths[cid]
@@ -109,16 +121,15 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
                     distance  = 0.0
                 else:
                     distance = peakAmp
-
-                if not do_ab:
-                    prof[i] += distance * np.exp(-((xlos[i] - pc[0])**2 / (2 * sigmax**2) + (ylos[i] - pc[1])**2 / (2 * sigmay**2)))
-                else:
-                    prof[i] += distance * np.exp(-((xlos[i] - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (ylos[i] - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
+                    if not do_ab:
+                        prof[i] += distance * np.exp(-((xlos[i] - pc[0])**2 / (2 * sigmax**2) + (ylos[i] - pc[1])**2 / (2 * sigmay**2)))
+                    else:
+                        prof[i] += distance * np.exp(-((xlos[i] - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (ylos[i] - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
 
 
 
     
-    return prof, Z
+    return prof, Z, W
 
 #===============================================================================================================================================
 #                                       MAIN:
@@ -198,7 +209,7 @@ H = bm.emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone)
 #========================================
 for i in np.arange(len(freq)):
     heights = bm.height_f(H, freq[i]) # frequency dependent H
-    pr, Z = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam, hollowCone)
+    pr, Z, W = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam, hollowCone)
     w10.append(bm.find_width(pr)) # Width at 10% of the peak 
     prof.append(pr)               # Profile for that frequency
     beam.append(Z)                # 2D beam 
@@ -273,7 +284,7 @@ if all(i > 10 for i in SN):
     peaks_of_average = []
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
     phase_bin1 = bm.find_phase_bin(resampled[0])
-    dm_range = bm.find_delta_dm(P, resampled, highres_phase, phase_bin0, phase_bin1, freq[nch - 1], freq[0], nch)
+    dm_range = bm.find_delta_dm(freq[nch - 1], freq[0], W, P)
 #    print "First iteration: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
 #    print "dm step:", (dm_range[1]-dm_range[0])
     for dm_id in range(len(dm_range)):
@@ -333,7 +344,9 @@ dm_bin = bm.find_phase_bin(peaks_of_average) # find the bin where the SNR-DM cur
 #dm_step = 1/float(binshift)
 # print dm_range[dm_bin-1], dm_range[dm_bin],  dm_range[dm_bin+1], dm_bin
 # dm_search = np.arange(dm_range[dm_bin] - 100*dm_step,dm_range[dm_bin] + 100*dm_step ,dm_step)
-dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[dm_bin + 1], 200) # search for the range to try
+best_dm1 = dm_range[dm_bin]
+dm_search = np.linspace(-best_dm1, best_dm1, 200)
+#dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[min(dm_bin + 1,19)], 200) # search for the range to try
 dm_range = dm_search # set a new range
 #dm_range = np.linspace(-.025, .025, 200)
 #print "Second iterationd: dm_range[0] = %.5f, dm range[-1] = %.5f " %(dm_range[0], dm_range[-1])
