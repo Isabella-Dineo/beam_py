@@ -160,6 +160,7 @@ parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - defa
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 parser.add_argument('--showrfm', action="store_true", help='Option to produce rfm .gif image')
 parser.add_argument('--diagnostic', action="store_true", help='Option to show diagnostic plots')
+parser.add_argument('--randombeta', action="store_true", help='Option to chose a rando beta')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
@@ -168,7 +169,6 @@ npatch = args.npatch
 hmin = args.hmin
 hmax = args.hmax
 alpha = args.alpha
-beta = args.beta
 snr = args.snr
 do_ab = args.do_ab
 nch = args.nch
@@ -203,9 +203,19 @@ freq = np.linspace(min_freq, max_freq, nch) #channel frequencies in GHz!!!
 #     1. Find the emission height:
 #=======================================
 H = bm.emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone)
-#========================================
-#     2. Get profile at each frequency:
-#========================================
+
+# define impact parameter
+if args.randombeta:
+    # Largest opening angle at lowest frequency:
+    h = bm.height_f(H, freq[0])
+    opening_angle = bm.rho(P, h)
+    beta = np.random.uniform(np.max(opening_angle))
+else:
+    beta = args.beta
+
+# ========================================
+#      2. Get profile at each frequency:
+# ========================================
 for i in np.arange(len(freq)):
     heights = bm.height_f(H, freq[i]) # frequency dependent H
     pr, Z, W = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam, hollowCone)
@@ -288,12 +298,12 @@ if all(i > 10 for i in SN):
         shifted_profiles = []
         if args.diagnostic:
             fig = plt.figure(figsize=(10,5))
-            #st = fig_dm.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
             plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
             plt.xlabel('phase (degrees)')
             plt.ylabel('Intensity')
             plt.xlim(-75,75)
             plt.grid()
+
         for freq_id in range(nch):
             bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/1000.) # Res increased by 1000 more bins
             shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
@@ -303,21 +313,19 @@ if all(i > 10 for i in SN):
         #peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
         average = bm.avg_prof(shifted_profiles)
         peaks_of_average.append(bm.find_peak(average))
-#        if args.diagnostic:
 #            plt.subplot(1,2,2)
 #            plt.plot(highres_phase, average_profile[dm_id])
 #            plt.ylim(np.min(profile), np.max(profile))
 #            plt.xlim(-100, 100)
 #            plt.grid()
-        if args.diagnostic:
-            if args.doHC:
-                fig.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
-                fig.clear()
-                plt.close(fig)
-            else:
-                fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
-                fig.clear()
-                plt.close(fig)
+        if args.doHC:
+            fig.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+            fig.clear()
+            plt.close(fig)
+        else:
+            fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+            fig.clear()
+            plt.close(fig)
 #   Find region that we will search for best dm
     dm_bin = bm.find_phase_bin(peaks_of_average) # find the bin where the SNR-DM curve peak (best DM from the 1st iteration)
 #   binshift = bm.delay(freq[-1], freq[0], 1, t_res/1000)
@@ -329,22 +337,6 @@ if all(i > 10 for i in SN):
     dm_range_2 = dm_search # set a new range
 #   dm_range = np.linspace(-.025, .025, 200)
 #   Plot the region we search for best dm
-    for dm_id in range(len(dm_range_2)):
-        shifted_profiles = []
-        if args.diagnostic:
-            fig = plt.figure(figsize=(10,5))
-            #st = fig_dm.suptitle("Dm trial, delta DM = %.5f" %(dm_range[dm_id]), fontsize="x-large")
-            plt.title('DM trial, delta DM = %.5f' %dm_range_2[dm_id])
-            plt.xlabel('phase (degrees)')
-            plt.ylabel('Intensity')
-            plt.xlim(-75,75)
-            plt.grid()
-        for freq_id in range(nch):
-            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range_2[dm_id], t_res/1000.) # Res increased by 1000 more bins
-            shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
-            #plt.subplot(1,2,1)
-            plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id)
-
     if args.getPlot:
         # Create a snr vs dm plot for visualization
         snrfig1 = plt.figure()
@@ -364,9 +356,6 @@ if all(i > 10 for i in SN):
 
 #----------------- SECOND ITERATION ----------------------------
 # Search for a best dm
-
-if all(i > 10 for i in SN):
-    #average_profile = []
     peaks_of_average = []
     for dm_id in range(len(dm_range_2)):
         shifted_profiles = []
@@ -399,13 +388,6 @@ if all(i > 10 for i in SN):
             snrfig2.clear()
             plt.close(snrfig2)
 
-
-    # Find the best dm (dm that maximises SNR)
-    for i in range(len(peaks_of_average)):
-        if peaks_of_average[i] == np.max(peaks_of_average):
-            best_dm = dm_range_2[i]
-#            print "Best dm = ", best_dm
-    
     # Write out important parameters into a file    
     if args.outfile:
         if args.doHC:
