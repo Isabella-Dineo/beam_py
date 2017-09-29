@@ -578,7 +578,6 @@ def add_noise(prof, rms, res):
 
     """
     peak = find_peak(prof)
-    print 'Shape of profile array is: ', np.shape(prof)
     noise = np.random.normal(0, rms, np.shape(prof))
     noisy_prof = prof + noise
 #    noisy_prof = np.asarray(prof).T
