@@ -44,17 +44,17 @@ for fid in range(len(files)):
     fig = plt.figure(figsize=(10, 10))
     x,y,_=plt.hist(dat, bins=100)
     plt.yscale('log', nonposy='clip')
-    plt.title('$\Delta$DM distribution: ' + str(args.o) + ' band', fontsize=18)
-    plt.xlim(-21, 21)
-    plt.title('$\Delta$DM distribution: ' + str(args.o) + ' band')
+    plt.title('$\Delta$DM distribution: ' + str(args.o) + ' band', fontsize=20)
+    plt.xlim(-0.06, 0.06)
     #if abs(np.max(dat)) > abs(np.min(dat)):
     #    plt.xlim(-np.max(dat), np.max(dat))
     #elif abs(np.max(dat)) < abs(np.min(dat)):
     #    plt.xlim(-abs(np.min(dat)), abs(np.min(dat)))
-    plt.xlabel(r'$\Delta$DM', fontsize=18)
     plt.ylabel('log(samples)', fontsize=18)
-    plt.xlabel(r'$\Delta$DM (pc cm$^{-3}$) ')
+    plt.xlabel(r'$\Delta$DM (pc cm$^{-3}$)', fontsize=18)
     plt.ylabel('log(samples)')
+    plt.tick_params(axis='both', which='major', labelsize=10)
+    #plt.tick_params(axis='both', which='minor', labelsize=8)
  
     # Fitting a bimodal distribution:
 #    if args.fit:
