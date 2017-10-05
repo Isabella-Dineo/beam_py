@@ -306,9 +306,10 @@ if all(i > 10 for i in SN):
         D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
         dm_scatter = delta_t/ (D * ((freq[-1] * 1e3)**(-2) - (freq[0] * 1e3)**(-2)))
         dm_range = np.linspace(-0.5*dm_scatter, dm_scatter*0.5 , num=20)
-        # Add to range of DM to search:
     else:
-        dm_range = np.linspace(-0.5*dm, dm*0.5 , num=20)
+        D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+        dm_unscatter = delta_t / (D * ((freq[-1]*1e3)**(-2) - (freq[0]*1e3)**(-2))) 
+        dm_range = np.linspace(-0.5*dm_unscatter, dm_unscatter*0.5 , num=20)
 
     for dm_id in range(len(dm_range)):
         shifted_profiles = []
@@ -353,7 +354,10 @@ if all(i > 10 for i in SN):
 #   Find the dm that maximises SNR from 1st search    
     best_dm1 = dm_range[dm_bin]
 #   A finer search around this dm
-    new_dm_search = np.linspace(best_dm1-0.5*best_dm1, best_dm1+0.5*best_dm1, 200)
+    if args.scatter:
+        new_dm_search = np.linspace(best_dm1-0.5*best_dm1, best_dm1+0.5*best_dm1, 200)
+    else:
+        new_dm_search = np.linspace(-best_dm1, best_dm1, 200)
 #   dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[min(dm_bin + 1,19)], 200) # search for the range to try
     dm_range_2 = new_dm_search # set a new range
 #   dm_range = np.linspace(-.025, .025, 200)

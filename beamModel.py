@@ -632,7 +632,7 @@ def find_phase_bin(prof):
 
 # Find a phase/time corresponding to the peak of the profile
 def find_delta_t( width, P):
-      """ Finds the time delay to smear profile accross a given width 
+    """ Finds the time delay to smear profile accross a given width 
        Args:
        -----
        width : W, the estimated width of our profiles
@@ -641,28 +641,8 @@ def find_delta_t( width, P):
        delta_t   : time delay to shift aprofiles accros given width
        
     """
-#    # Find the delta phase shift between the min and max frequency profile:
-#    phase_at_peak0 = phase[phase_bin0] # peak at reference profile (/max freq)
-#    phase_at_peak1 = phase[phase_bin1]
-#    D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-#    #range_dm = 0.01 # dm units
-#    if phase_bin0==phase_bin1:
-#        dm = 0
-#    else:
-#        delta_phase = phase_at_peak1 - phase_at_peak0
-#        # Convert the phase to time and find a corresponding delta_dm:
-#        delta_t = delta_phase/360. * P
-#        dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
-#        #print 'delta phase:', delta_phase
-#        #print 'delta t:', delta_t
-#    #delta_dm = np.linspace(-dm - range_dm, -dm + range_dm, num=20)# try only 20 for now
-#    delta_dm = np.linspace(- 5. * dm, 3. * dm , num=20)# try only 20 for now
-#    #delta_dm = np.linspace(-100. * dm, 100. * dm , num=20)# try only 20 for now
-#    #print 'delta dm:', delta_dm
 #   ============ FIND A DM THAT WOULD SMEAR THE PROFILES ACROSS THE EXPECTED PROFILE WIDTH ==========   
     delta_t = width/360.0 * P  
-#    dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
-    #delta_dm = np.linspace(-0.5*dm, dm*0.5 , num=20)
     return delta_t
 
 
