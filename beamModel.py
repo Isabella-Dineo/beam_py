@@ -631,17 +631,14 @@ def find_phase_bin(prof):
 
 
 # Find a phase/time corresponding to the peak of the profile
-def find_delta_dm(freq_ref, freq, this_width, P):
-    """Function to determine a range of dispersion measures to try.
-       
+def find_delta_t( width, P):
+      """ Finds the time delay to smear profile accross a given width 
        Args:
        -----
-       freq_ref   : reference frequecy (in GHz)
-       freq       : frequency to shift (in GHz)
-       this_width : W, the estimated width of our profiles
+       width : W, the estimated width of our profiles
        Returns:
        --------
-       delta_dm   : a range of dispersion measures to try (numpy array)
+       delta_t   : time delay to shift aprofiles accros given width
        
     """
 #    # Find the delta phase shift between the min and max frequency profile:
@@ -662,12 +659,11 @@ def find_delta_dm(freq_ref, freq, this_width, P):
 #    delta_dm = np.linspace(- 5. * dm, 3. * dm , num=20)# try only 20 for now
 #    #delta_dm = np.linspace(-100. * dm, 100. * dm , num=20)# try only 20 for now
 #    #print 'delta dm:', delta_dm
-#   ============ FIND A DM THAT WOULD SMEAR THE PROFILES ACROSS 100 DEGREES ==========   
-    D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-    delta_t = this_width/360.0 * P  
-    dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
-    delta_dm = np.linspace(-0.5*dm, dm*0.5 , num=20)
-    return delta_dm
+#   ============ FIND A DM THAT WOULD SMEAR THE PROFILES ACROSS THE EXPECTED PROFILE WIDTH ==========   
+    delta_t = width/360.0 * P  
+#    dm = delta_t / (D * ((freq_ref * 1e3)**(-2) - (freq * 1e3)**(-2)))
+    #delta_dm = np.linspace(-0.5*dm, dm*0.5 , num=20)
+    return delta_t
 
 
 def delay(freq_ref, freq , delta_dm, t_res):

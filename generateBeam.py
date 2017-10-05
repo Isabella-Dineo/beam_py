@@ -6,14 +6,13 @@
 import beamModel as bm
 import numpy as np
 import argparse
-import time, os
+import time, os, sys
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy.signal as sci_sig
 import scipy.stats as stats
 from matplotlib.ticker import MultipleLocator
-import sys
 #==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
 #==============================================================================================================================================
@@ -124,9 +123,6 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
                         prof[i] += distance * np.exp(-((xlos[i] - pc[0])**2 / (2 * sigmax**2) + (ylos[i] - pc[1])**2 / (2 * sigmay**2)))
                     else:
                         prof[i] += distance * np.exp(-((xlos[i] - pc[0] - ab_xofset[cid])**2 / (2 * sigmax**2) + (ylos[i] - pc[1] - ab_yofset[cid])**2 / (2 * sigmay**2)))
-
-
-
     
     return prof, Z, W
 
@@ -160,7 +156,7 @@ parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - defa
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 parser.add_argument('--showrfm', action="store_true", help='Option to produce rfm .gif image')
 parser.add_argument('--diagnostic', action="store_true", help='Option to show diagnostic plots')
-parser.add_argument('--randombeta', action="store_true", help='Option to chose a rando beta')
+parser.add_argument('--randombeta', action="store_true", help='Option to chose a random beta')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
@@ -192,7 +188,7 @@ else:
 #=====================
 beam = []
 prof = []
-w10 = []
+#w10 = []
 res = 1e3 # resolution
 t_res = P/res # time-reso;ution
 phase = np.linspace(-180, 180, num=res) # rotation phase in degrees
@@ -203,25 +199,30 @@ freq = np.linspace(min_freq, max_freq, nch) #channel frequencies in GHz!!!
 #     1. Find the emission height:
 #=======================================
 H = bm.emission_height(P, ncomp, iseed, hmin, hmax, fanBeam, hollowCone)
-
-# define impact parameter
-if args.randombeta:
-    # Largest opening angle at lowest frequency:
-    h = bm.height_f(H, freq[0])
-    opening_angle = bm.rho(P, h)
-    beta = np.random.uniform(np.max(opening_angle))
-else:
-    beta = args.beta
+emission_heights = []
+for i in np.arange(len(freq)):
+#   frequency dependent H 
+    emission_heights.append(bm.height_f(H, freq[i]))
 
 # ========================================
 #      2. Get profile at each frequency:
 # ========================================
-for i in np.arange(len(freq)):
-    heights = bm.height_f(H, freq[i]) # frequency dependent H
-    pr, Z, W = generateBeam(P, alpha, beta, freq[i], heights, npatch, snr, do_ab, iseed, fanBeam, hollowCone)
-    w10.append(bm.find_width(pr)) # Width at 10% of the peak 
+# ------- Get the impact parameter -------
+if args.randombeta:
+    # Largest opening angle at lowest frequency:
+    h = np.max(emission_heights)
+    opening_angle = bm.rho(P, h)
+    np.random.seed(iseed)
+    beta = np.random.uniform(-np.max(opening_angle), np.max(opening_angle))
+else:
+    beta = args.beta
+# -------- Get the beam & profile --------
+for i in range(nch):
+    pr, Z, W = generateBeam(P, alpha, beta, freq[i], emission_heights[i], npatch, snr, do_ab, iseed, fanBeam, hollowCone)
+#    w10.append(bm.find_width(pr)) # Width at 10% of the peak 
     prof.append(pr)               # Profile for that frequency
     beam.append(Z)                # 2D beam 
+
 #==========================================
 #     3. Scatter the line of sight profile: 
 #==========================================
@@ -234,7 +235,7 @@ if not scr:
 else:
     sc_prof = []
     if not args.dm:
-        rand_dm = bm.getadm(args.dmFile, iseed, nbins=500, n=1) # random dm value from a dist. of known psr dm
+        rand_dm = bm.getadm(args.dmFile, iseed, nbins=100, n=1) # random dm value from a dist. of known psr dm
     else:
         rand_dm = args.dm
     #rand_dm = bm.getadm(args.dmFile, iseed, nbins=500, n=1) # random dm value from a dist. of known psr dm
@@ -252,8 +253,6 @@ else:
         sc_train = bm.scatter(train[fid], bf)
         #Extract a pulse profile
         sc_prof.append(bm.extractpulse(sc_train, 2, res))
-
-
 #===========================================
 #     4. Add noise:
 #===========================================
@@ -293,7 +292,24 @@ if all(i > 10 for i in SN):
     peaks_of_average = []
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
     phase_bin1 = bm.find_phase_bin(resampled[0])
-    dm_range = bm.find_delta_dm(freq[nch - 1], freq[0], W, P)
+#   Find the time delay between max and min frequency profiles
+    delta_t = bm.find_delta_t(W, P)
+#   Scattering broadens the pulse profile, introducing a possible shift in the peak
+#   relative to the unscattered profile.
+#   If scattering included = The range of DM to tries shift by tau from DM used for scatteering
+    if args.scatter:
+        # Get the delay caused by scattering:
+        delta_tau = bm.sc_time(freq[0], rand_dm, iseed)
+        # Total time delay:
+        delta_t = delta_t + delta_tau
+        # Relate to dispersion measure:
+        D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+        dm_scatter = delta_t/ (D * ((freq[-1] * 1e3)**(-2) - (freq[0] * 1e3)**(-2)))
+        dm_range = np.linspace(-0.5*dm_scatter, dm_scatter*0.5 , num=20)
+        # Add to range of DM to search:
+    else:
+        dm_range = np.linspace(-0.5*dm, dm*0.5 , num=20)
+
     for dm_id in range(len(dm_range)):
         shifted_profiles = []
         if args.diagnostic:
@@ -301,7 +317,7 @@ if all(i > 10 for i in SN):
             plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
             plt.xlabel('phase (degrees)')
             plt.ylabel('Intensity')
-            plt.xlim(-75,75)
+            plt.xlim(-180, 180)
             plt.grid()
 
         for freq_id in range(nch):
@@ -326,21 +342,27 @@ if all(i > 10 for i in SN):
             fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
             fig.clear()
             plt.close(fig)
-#   Find region that we will search for best dm
-    dm_bin = bm.find_phase_bin(peaks_of_average) # find the bin where the SNR-DM curve peak (best DM from the 1st iteration)
+
+
+#------------   Find region that we will search for best dm -----------
+#   find the bin where the SNR-DM curve peak (best DM from the 1st iteration)
+    dm_bin = bm.find_phase_bin(peaks_of_average) 
 #   binshift = bm.delay(freq[-1], freq[0], 1, t_res/1000)
 #   dm_step = 1/float(binshift)
 #   dm_search = np.arange(dm_range[dm_bin] - 100*dm_step,dm_range[dm_bin] + 100*dm_step ,dm_step)
+#   Find the dm that maximises SNR from 1st search    
     best_dm1 = dm_range[dm_bin]
-    dm_search = np.linspace(-best_dm1, best_dm1, 200)
+#   A finer search around this dm
+    new_dm_search = np.linspace(best_dm1-0.5*best_dm1, best_dm1+0.5*best_dm1, 200)
 #   dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[min(dm_bin + 1,19)], 200) # search for the range to try
-    dm_range_2 = dm_search # set a new range
+    dm_range_2 = new_dm_search # set a new range
 #   dm_range = np.linspace(-.025, .025, 200)
 #   Plot the region we search for best dm
     if args.getPlot:
         # Create a snr vs dm plot for visualization
         snrfig1 = plt.figure()
         plt.plot(dm_range, peaks_of_average, '.')
+        plt.axvline(x=best_dm1, color='r', ymax=np.max(peaks_of_average))
 #        plt.fill_betweenx(peaks_of_average, x1=-best_dm1, x2=best_dm1, color='grey', alpha='0.5')
         plt.title('Best dm trial')
         plt.xlabel('delta dm (pc cm^-3)')
@@ -376,8 +398,8 @@ if all(i > 10 for i in SN):
         plt.plot(dm_range_2, peaks_of_average, '.')
         if best_dm:
             plt.axvline(x=best_dm, color='r', ymax=np.max(peaks_of_average))
-            plt.annotate('annotate', xy=(best_dm, peaks_of_average[i]), xytext=(np.min(peaks_of_average), 0.01),\
-            arrowprops=dict(facecolor='black', shrink=0.05))
+            #plt.annotate('annotate', xy=(best_dm, peaks_of_average[i]), xytext=(np.min(peaks_of_average), 0.01),\
+            #arrowprops=dict(facecolor='black', shrink=0.05))
         plt.title('Best dm trial')
         plt.xlabel('delta dm (pc cm^-3)')
         plt.ylabel('SNR')
@@ -389,6 +411,7 @@ if all(i > 10 for i in SN):
             snrfig2.savefig('SNR_DM_KJ07_seed_%d_bestDm_%.3f_2.png' %(iseed, best_dm))
             snrfig2.clear()
             plt.close(snrfig2)
+    
 
     # Write out important parameters into a file    
     if args.outfile:
@@ -397,7 +420,7 @@ if all(i > 10 for i in SN):
         else:
             model = 'Patchy_beam'
         pulsarParams = np.asarray([model, min_freq, chbw, nch, P, alpha, beta, \
-                                  iseed, rand_dm, best_dm])
+                                  iseed, int(rand_dm), best_dm])
         f = open('dm_dat.txt', 'a')
         f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
@@ -415,7 +438,7 @@ if args.getPlot:
 	plt.title('Profile evolution with frequency' )
 	plt.xlabel('Phase (degrees)')
         plt.ylabel('Frequency (%.3f - %.3f MHz)' %(freq[0]*1e3, freq[-1]*1e3))
-        plt.xlim(-50,50)
+        plt.xlim(-180,180)
         plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
         plt.grid('on', which='both')
         #============================================
@@ -444,7 +467,15 @@ if args.getPlot:
         plt.colorbar()
         # 1D plot
         ax32 = fig3.add_subplot(1,2,2)
-        plt.plot(phase, profile[0], color='blue')
+        plt.plot(phase, profile[0], color='blue', label='Scattered')
+        # For comparision, overplot a non scattered profile with added noise
+        if args.scatter:
+            if args.snr:
+                prof_noise = bm.add_noise(prof[0], rms, res)
+                plt.plot(phase, prof_noise, color='grey', alpha=0.5, label='Intrinsic')
+            else:
+                plt.plot(phase, prof[0], color='grey', alpha=0.5, label='Intrinsic')
+            plt.legend()
         plt.title('Profile at %.3f GHz' % freq[0])
         plt.ylim(np.min(profile), np.max(profile))
         plt.xlim(-180, 180)
@@ -489,7 +520,15 @@ if args.getPlot:
             plt.colorbar()
             # 1D profile plot
             ax42 = fig4.add_subplot(1,2,2)
-            plt.plot(phase, profile[bid])
+            plt.plot(phase, profile[bid], label='Scattered')
+            # Overplot non scattered profile (noise added) for comparision
+            if args.scatter:
+                if args.snr:
+                    prof_noise = bm.add_noise(prof[bid], rms, res)
+                    plt.plot(phase, prof_noise, color='grey', alpha=0.5, label='Intrinsic')
+                else:
+                    plt.plot(phase, prof[bid], color='grey', alpha=0.5, label='Intrinsic')
+                plt.legend()
             plt.title('Profile at %.3f GHz' % freq[bid])
             plt.xlim(-180, 180)
             plt.ylim(np.min(profile), np.max(profile))
