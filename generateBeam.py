@@ -63,7 +63,7 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     opa_max = bm.rho(P, maxheight)
 #   find profile width using Gil formula (eq 3.26)
     sin2W4 = (np.sin(np.deg2rad(opa_max))**2-np.sin(np.deg2rad(beta/2.0))**2)/ (np.sin(np.deg2rad(alpha))*np.sin(np.deg2rad(alpha+beta)))
-    W = 4. * np.rad2deg(np.arcsin(np.sqrt(sin2W4)))
+    W = 4. * np.rad2deg(np.arcsin(np.sqrt(abs(sin2W4))))
 #   An arbitrary peak of the profile:
     peakAmp = 1.
 #   Get the line of sight:
@@ -235,7 +235,7 @@ if not scr:
 else:
     sc_prof = []
     if not args.dm:
-        rand_dm = bm.getadm(args.dmFile, iseed, nbins=100, n=1) # random dm value from a dist. of known psr dm
+        rand_dm = bm.getadm(args.dmFile, iseed, nbins=50, n=1) # random dm value from a dist. of known psr dm
     else:
         rand_dm = args.dm
     #rand_dm = bm.getadm(args.dmFile, iseed, nbins=500, n=1) # random dm value from a dist. of known psr dm
@@ -273,7 +273,6 @@ else:
 # Write out the profile into a file (scattered, with added noise, if specified)
 if args.writeprofile:
     np.savetxt('profile_file.txt', np.array(profile))
-
 #==================================================================
 #      5. Fit a DM Curve:
 #==================================================================
@@ -283,11 +282,10 @@ resampled = np.zeros((int(nch),int(1000*res)))
 for nfr in range(len(freq)):
     resampled[nfr] = sci_sig.resample(profile[nfr], int(1000*res))
 
-
 # delta dm search only for profiles with snr above threshold
 #----------------- FIRST ITERATION --------------------------------
 # Find a region that contain the best DM
-if all(i > 10 for i in SN):
+if all(i > 5 for i in SN):
     #average_profile = []
     peaks_of_average = []
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
@@ -310,7 +308,6 @@ if all(i > 10 for i in SN):
         D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
         dm_unscatter = delta_t / (D * ((freq[-1]*1e3)**(-2) - (freq[0]*1e3)**(-2))) 
         dm_range = np.linspace(-0.5*dm_unscatter, dm_unscatter*0.5 , num=20)
-
     for dm_id in range(len(dm_range)):
         shifted_profiles = []
         if args.diagnostic:
@@ -335,14 +332,15 @@ if all(i > 10 for i in SN):
 #            plt.ylim(np.min(profile), np.max(profile))
 #            plt.xlim(-100, 100)
 #            plt.grid()
-        if args.doHC:
-            fig.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
-            fig.clear()
-            plt.close(fig)
-        else:
-            fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
-            fig.clear()
-            plt.close(fig)
+        if args.diagnostic:
+            if args.doHC:
+                fig.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+                fig.clear()
+                plt.close(fig)
+            else:
+                fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+                fig.clear()
+                plt.close(fig)
 
 
 #------------   Find region that we will search for best dm -----------
@@ -395,7 +393,6 @@ if all(i > 10 for i in SN):
     for i in range(len(peaks_of_average)):
         if peaks_of_average[i] == np.max(peaks_of_average):
             best_dm = dm_range_2[i]
-    
     if args.getPlot:
 #       Create a snr vs dm plot for visualization
         snrfig2 = plt.figure()
@@ -416,7 +413,6 @@ if all(i > 10 for i in SN):
             snrfig2.clear()
             plt.close(snrfig2)
     
-
     # Write out important parameters into a file    
     if args.outfile:
         if args.doHC:
