@@ -235,7 +235,7 @@ if not scr:
 else:
     sc_prof = []
     if not args.dm:
-        rand_dm = bm.getadm(args.dmFile, iseed, nbins=50, n=1) # random dm value from a dist. of known psr dm
+        rand_dm = bm.getadm(args.dmFile, iseed) # random dm value from a dist. of known psr dm
     else:
         rand_dm = args.dm
     #rand_dm = bm.getadm(args.dmFile, iseed, nbins=500, n=1) # random dm value from a dist. of known psr dm
@@ -314,15 +314,16 @@ if all(i > 5 for i in SN):
             fig = plt.figure(figsize=(10,5))
             plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
             plt.xlabel('phase (degrees)')
-            plt.ylabel('Intensity')
-            plt.xlim(-180, 180)
+            plt.ylabel('Profiles at frequencies (%.1f - %.1f MHz) ' %(freq[0]*1e3, freq[-1]*1e3))
+            plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
+            plt.xlim(-75, 75)
             plt.grid()
 
         for freq_id in range(nch):
             bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/1000.) # Res increased by 1000 more bins
             shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
             #plt.subplot(1,2,1)
-            plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id)
+            plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id, color='grey')
         #average_profile.append(bm.avg_prof(shifted_profiles))
         #peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
         average = bm.avg_prof(shifted_profiles)
