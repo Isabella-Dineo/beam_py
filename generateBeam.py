@@ -146,7 +146,7 @@ parser.add_argument('-nch', metavar="<nch>", type=int, default='5', help='number
 parser.add_argument('-iseed', metavar="<iseed>", type=int, default=None, help='integer seed for a pseudo-random number generator (default = 4)')
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
 parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
-parser.add_argument('-dm', metavar="<dm>", type=int, help='A dm to use for scattering.')
+parser.add_argument('-dm', metavar="<dm>", type=float, help='A dm to use for scattering.')
 parser.add_argument('--outfile', action="store_true", help="Write delta dm to file.")
 parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
 parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
@@ -285,7 +285,7 @@ for nfr in range(len(freq)):
 # delta dm search only for profiles with snr above threshold
 #----------------- FIRST ITERATION --------------------------------
 # Find a region that contain the best DM
-if all(i > 5 for i in SN):
+if all(i > 10 for i in SN):
     #average_profile = []
     peaks_of_average = []
     phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
