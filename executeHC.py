@@ -42,14 +42,11 @@ for i in range(iterations):
     if args.scatter:
         dm = scatter_dm[i]
         sampled.append(dm)
-fig = plt.figure()
-plt.hist(dm)
-fig.savefig('sampled_dm.png')
-#    else:
-#        dm = None
-#    alpha = np.rad2deg(np.arccos(np.random.uniform()))
-#    nc = 4
-#    npatch = 4 
-#    os.system('generateBeam.py -alpha %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
-#               -snr %d --outfile --doHC --getPlot --diagnostic --randombeta --scatter -dm %f'\
-#               % (alpha, P, fmin, bw, nch, nc, npatch, snr, dm))
+    else:
+        dm = None
+    alpha = np.rad2deg(np.arccos(np.random.uniform()))
+    nc = 4
+    npatch = 4 
+    os.system('generateBeam.py -alpha %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
+               -snr %d --outfile --doHC --getPlot --diagnostic --randombeta --scatter -dm %f'\
+               % (alpha, P, fmin, bw, nch, nc, npatch, snr, dm))
