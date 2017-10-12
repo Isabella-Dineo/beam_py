@@ -542,10 +542,10 @@ if args.getPlot:
             fig4.savefig('beam_%.3f_GHz_%s_%d_.png' %(freq[bid], suffix, int(iseed))) 
             fig4.clear()
             plt.close(fig4)
-# Clear up 
-cwd = os.getcwd()
-folder = '/' + str(iseed)
-new_directory = cwd + folder
-os.mkdir(new_directory)
-files_to_move = '*%s*.png' %(str(iseed))
-os.system('mv %s %s' %(files_to_move, new_directory))
+# Clean up 
+#cwd = os.getcwd()
+#folder = '/' + str(iseed)
+#new_directory = cwd + folder
+#os.mkdir(new_directory)
+#files_to_move = '*%s*.png' %(str(iseed))
+#os.system('mv %s %s' %(files_to_move, new_directory))
