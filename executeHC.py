@@ -3,6 +3,8 @@
 import numpy as np
 import argparse, os
 import time
+import beamModel as bm
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(prog='Run the beam code multiple times.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-f', metavar='<fileName>', type=str, default='outFile')
@@ -26,6 +28,9 @@ fmin = args.min_freq
 bw = args.bw
 nch = args.nch
 snr = args.snr
+# Create  a scattering dm distribution
+scatter_dm = bm.getadm('psrcatdm.dat', int(time.time()), nbins=1000, n=iterations) # The seed used here will not be the same as seed for experiment... i
+sampled = []
 for i in range(iterations):
     if args.iseed == None:
         iseed = int(time.time())
@@ -34,10 +39,17 @@ for i in range(iterations):
     np.random.seed(iseed) 
     if P == None:
         P = np.random.uniform(0.1, 2)
-  
-    alpha = np.rad2deg(np.arccos(np.random.uniform()))
-    nc = 4
-    npatch = 4 
-    os.system('generateBeam.py -alpha %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
-               -snr %d --outfile --doHC --getPlot --diagnostic --randombeta --scatter'\
-               % (alpha, P, fmin, bw, nch, nc, npatch, snr))
+    if args.scatter:
+        dm = scatter_dm[i]
+        sampled.append(dm)
+fig = plt.figure()
+plt.hist(dm)
+fig.savefig('sampled_dm.png')
+#    else:
+#        dm = None
+#    alpha = np.rad2deg(np.arccos(np.random.uniform()))
+#    nc = 4
+#    npatch = 4 
+#    os.system('generateBeam.py -alpha %.3f -p %.3f -min_freq %.3f -chbw %.3f -nch %d -nc %d -npatch %d \
+#               -snr %d --outfile --doHC --getPlot --diagnostic --randombeta --scatter -dm %f'\
+#               % (alpha, P, fmin, bw, nch, nc, npatch, snr, dm))
