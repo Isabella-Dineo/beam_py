@@ -1,21 +1,19 @@
 #!/usr/bin/env python
-
-# Program to generate a 2D beam and the corresponding 1D line 
+# Program to generate a 2D beam and the corresponding 1D line
 # of sight profiles at varying frequency.
-
 import beamModel as bm
 import numpy as np
 import argparse
-import time, os, sys
+import time
+import sys
+from scipy.signal import resample  
+from scipy.optimize import curve_fit
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import scipy.signal as sci_sig
-import scipy.stats as stats
-from matplotlib.ticker import MultipleLocator
-#==============================================================================================================================================
+# ==============================================================================================================================================
 #                                          IMPORTANT FUNCTION:
-#==============================================================================================================================================
+# ==============================================================================================================================================
 def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBeam=None, hollowCone=None):
     """Function to plot the patches for a given rotation period.
     
@@ -84,9 +82,9 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
 
 #       2D patch (including aberation):
         for pc in zip(patchCenterX, patchCenterY):
-            #if distance of current box from the patch center is
-            #larger than 3 times the patchwidth, I do not want any
-            #power contributed
+            # if distance of current box from the patch center is
+            # larger than 3 times the patchwidth, I do not want any
+            # power contributed
             # first compute a grid of distance from the center of the patch, in units of the width
             distance = (np.sqrt((X - pc[0])**2 + (Y - pc[1])**2))/sigmax
             distance[np.where(distance > 3.0)] = 0.0
@@ -126,9 +124,9 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     
     return prof, Z, W
 
-#===============================================================================================================================================
+# ===============================================================================================================================================
 #                                       MAIN:
-#===============================================================================================================================================
+# ===============================================================================================================================================
 
 parser = argparse.ArgumentParser(description='Plot the patchy emission region as well as the line of sight profile.\
                                  Running the file without specified argument will produce an output beam and profile from default parameters.')
@@ -147,21 +145,24 @@ parser.add_argument('-iseed', metavar="<iseed>", type=int, default=None, help='i
 parser.add_argument('-snr', metavar="<snr>", type=float, default=None, help='signal to noise ratio (default = None)')
 parser.add_argument('-dmFile', metavar="<psrcat file>", default='psrcatdm.dat', type=str, help='A file containing PSRCAT dm values.')
 parser.add_argument('-dm', metavar="<dm>", type=float, help='A dm to use for scattering.')
+parser.add_argument('-freqrange', metavar="<range>", nargs='+', help='Option to select range of frequency (used only for labeling)')
 parser.add_argument('--outfile', action="store_true", help="Write delta dm to file.")
 parser.add_argument('--do_ab', action="store_true", help='include aberration ofset (default = None)')
 parser.add_argument('--doFan', action="store_true", help='Fan beam - default: patchy beam')
 parser.add_argument('--scatter', action="store_true", help='include scattering (default = None)')
+parser.add_argument('--disperse', action="store_true", help='include dispersion effects (default = None)')
 parser.add_argument('--writeprofile', action="store_true", help='Option to write out profile array into a file profile.txt.')
 parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - default: patchy beam')
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 parser.add_argument('--showrfm', action="store_true", help='Option to produce rfm .gif image')
 parser.add_argument('--diagnostic', action="store_true", help='Option to show diagnostic plots')
 parser.add_argument('--randombeta', action="store_true", help='Option to chose a random beta')
+parser.add_argument('--template_matching', action="store_true", help='Option to use template matching method for delta dm search. S/N maximization method default.')
 args = parser.parse_args()
 P = args.p
 ncomp = args.nc
 npatch = args.npatch
-#iseed = args.iseed
+# iseed = args.iseed
 hmin = args.hmin
 hmax = args.hmax
 alpha = args.alpha
@@ -180,20 +181,19 @@ if not args.iseed:
 else:
     iseed = args.iseed
 
-#====================================================================================================================================================
+# ====================================================================================================================================================
 #                                                        MAIN BODY: 
-#====================================================================================================================================================
-#=====================
+# ====================================================================================================================================================
+# =====================
 # initialize params:
-#=====================
+# =====================
 beam = []
 prof = []
-#w10 = []
 res = 1e3 # resolution
 t_res = P/res # time-reso;ution
 phase = np.linspace(-180, 180, num=res) # rotation phase in degrees
 max_freq = (nch - 1) * chbw + min_freq # maximum frequency
-freq = np.linspace(min_freq, max_freq, nch) #channel frequencies in GHz!!!
+freq = np.linspace(min_freq, max_freq, nch) # channel frequencies in GHz!!!
 
 #=======================================
 #     1. Find the emission height:
@@ -253,6 +253,23 @@ else:
         sc_train = bm.scatter(train[fid], bf)
         #Extract a pulse profile
         sc_prof.append(bm.extractpulse(sc_train, 2, res))
+
+#==========================================
+#    Disperse the signal
+#==========================================
+if args.disperse:
+    dispersed_profile = []
+    if args.dm:
+        for fid in range(len(freq)):
+            # Delay profiles using high freq profile as reference
+            bin_delay = bm.delay(freq[-1], freq[fid], args.dm, t_res)
+            print bin_delay
+            dispersed_profile.append(np.roll(sc_prof[fid], bin_delay))
+    else:
+        print 'Give a DM to disperse the profiles!'
+        sys.exit(1)
+else:
+    dispersed_profile = sc_prof
 #===========================================
 #     4. Add noise:
 #===========================================
@@ -263,157 +280,192 @@ else:
 
 SN = []
 if snr == None:
-    profile = sc_prof
+    profile = dispersed_profile
 else:
     rms = bm.noise_rms(snr)                            # Determine the noise rms
-    profile = bm.add_noise(sc_prof, rms, res)          # add noise to each profile
+    profile = bm.add_noise(dispersed_profile, rms, res)          # add noise to each profile
     for p in profile:
        SN.append(bm.signal_to_noise(np.max(p), rms))   # snr for each of the profiles(to use later below)
 
 # Write out the profile into a file (scattered, with added noise, if specified)
 if args.writeprofile:
-    np.savetxt('profile_file.txt', np.array(profile))
+    np.savetxt('profile_file_%i.txt' %iseed, np.array(profile))
+    np.savetxt('channels_%i.txt' %iseed, freq)
+    sys.exit()
 #==================================================================
 #      5. Fit a DM Curve:
 #==================================================================
 # Increase the resolution
-highres_phase = np.linspace(-180,180,1000*res)
-resampled = np.zeros((int(nch),int(1000*res)))
-for nfr in range(len(freq)):
-    resampled[nfr] = sci_sig.resample(profile[nfr], int(1000*res))
+if not args.template_matching:
+    highres_phase = np.linspace(-180,180,1000*res)
+    resampled = np.zeros((int(nch),int(1000*res)))
+    for nfr in range(len(freq)):
+        resampled[nfr] = resample(profile[nfr], int(1000*res))
 
-# delta dm search only for profiles with snr above threshold
-#----------------- FIRST ITERATION --------------------------------
-# Find a region that contain the best DM
-if all(i > 10 for i in SN):
-    #average_profile = []
-    peaks_of_average = []
-    phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
-    phase_bin1 = bm.find_phase_bin(resampled[0])
-#   Find the time delay between max and min frequency profiles
-    delta_t = bm.find_delta_t(W, P)
-#   Scattering broadens the pulse profile, introducing a possible shift in the peak
-#   relative to the unscattered profile.
-#   If scattering included = The range of DM to tries shift by tau from DM used for scatteering
-    if args.scatter:
-        # Get the delay caused by scattering:
-        delta_tau = bm.sc_time(freq[0], rand_dm, iseed)
-        # Total time delay:
-        delta_t = delta_t + delta_tau
-        # Relate to dispersion measure:
-        D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-        dm_scatter = delta_t/ (D * ((freq[-1] * 1e3)**(-2) - (freq[0] * 1e3)**(-2)))
-        dm_range = np.linspace(-0.5*dm_scatter, dm_scatter*0.5 , num=20)
-    else:
-        D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
-        dm_unscatter = delta_t / (D * ((freq[-1]*1e3)**(-2) - (freq[0]*1e3)**(-2))) 
-        dm_range = np.linspace(-0.5*dm_unscatter, dm_unscatter*0.5 , num=20)
-    for dm_id in range(len(dm_range)):
-        shifted_profiles = []
-        if args.diagnostic:
-            fig = plt.figure(figsize=(10,5))
-            plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id])
-            plt.xlabel('phase (degrees)')
-            plt.ylabel('Profiles at frequencies (%.1f - %.1f MHz) ' %(freq[0]*1e3, freq[-1]*1e3))
-            plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
-            plt.xlim(-75, 75)
-            plt.grid()
+    # delta dm search only for profiles with snr above threshold
+    #----------------- FIRST ITERATION --------------------------------
+    # Find a region that contain the best DM
+    #if all(i > 3 for i in SN):
+    if np.min(np.amax(profile, axis=1)) > 0.5:
+        #average_profile = []
+        peaks_of_average = []
+        phase_bin0 = bm.find_phase_bin(resampled[nch - 1])
+        phase_bin1 = bm.find_phase_bin(resampled[0])
+    #   Find the time delay between max and min frequency profiles
+        delta_t = bm.find_delta_t(W, P)
+    #   Scattering broadens the pulse profile, introducing a possible shift in the peak
+    #   relative to the unscattered profile.
+    #   If scattering included = The range of DM to tries shift by tau from DM used for scatteering
+        if args.scatter:
+            # Get the delay caused by scattering:
+            delta_tau = bm.sc_time(freq[0], rand_dm, iseed)
+            # Total time delay:
+            delta_t = delta_t + delta_tau
+            # Relate to dispersion measure:
+            D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+            dm_scatter = delta_t/ (D * ((freq[-1] * 1e3)**(-2) - (freq[0] * 1e3)**(-2)))
+            dm_range = np.linspace(-0.5*dm_scatter, dm_scatter*0.5 , num=20)
+        else:
+            D = 4.148808 * 1e3 # +/- 3e-6 MHz^2 pc^-1 cm^3 s
+            dm_unscatter = delta_t / (D * ((freq[-1]*1e3)**(-2) - (freq[0]*1e3)**(-2))) 
+            dm_range = np.linspace(-0.5*dm_unscatter, dm_unscatter*0.5 , num=20)
+        for dm_id in range(len(dm_range)):
+            shifted_profiles = []
+            if args.diagnostic:
+                fig = plt.figure(figsize=(10,5))
+                plt.title('DM trial, delta DM = %.5f' %dm_range[dm_id], fontsize=18)
+                plt.xlabel('Phase (degrees)', fontsize=18)
+                plt.ylabel('Frequencies (%.1f - %.1f MHz) ' %(freq[0]*1e3, freq[-1]*1e3), fontsize=18)
+                plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
+                plt.xlim(-180, 180)
+                plt.xticks(fontsize = 10)
+                plt.yticks(fontsize = 10)
+                plt.grid()
 
-        for freq_id in range(nch):
-            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/1000.) # Res increased by 1000 more bins
-            shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
-            #plt.subplot(1,2,1)
-            plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id, color='grey')
-        #average_profile.append(bm.avg_prof(shifted_profiles))
-        #peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
-        average = bm.avg_prof(shifted_profiles)
-        peaks_of_average.append(bm.find_peak(average))
+            for freq_id in range(nch):
+                bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range[dm_id], t_res/1000.) # Res increased by 1000 more bins
+                shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
+                #plt.subplot(1,2,1)
+                plt.plot(highres_phase, shifted_profiles[freq_id] + 2*freq_id, color='grey')
+            #average_profile.append(bm.avg_prof(shifted_profiles))
+            #peaks_of_average.append(bm.find_peak(average_profile[dm_id]))
+            average = bm.avg_prof(shifted_profiles)
+            peaks_of_average.append(bm.find_peak(average))
 #            plt.subplot(1,2,2)
 #            plt.plot(highres_phase, average_profile[dm_id])
 #            plt.ylim(np.min(profile), np.max(profile))
 #            plt.xlim(-100, 100)
 #            plt.grid()
-        if args.diagnostic:
-            if args.doHC:
-                fig.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
-                fig.clear()
-                plt.close(fig)
-            else:
-                fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
-                fig.clear()
-                plt.close(fig)
+            if args.diagnostic:
+                if args.doHC:
+                    fig.savefig('Dm_trial_HC_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+                    fig.clear()
+                    plt.close(fig)
+                else:
+                    fig.savefig('Dm_trial_KJ07_%d_seed_%d_DM_%.5f_1.png' %(dm_id, int(iseed),dm_range[dm_id]))
+                    fig.clear()
+                    plt.close(fig)
 
 
 #------------   Find region that we will search for best dm -----------
-#   find the bin where the SNR-DM curve peak (best DM from the 1st iteration)
-    dm_bin = bm.find_phase_bin(peaks_of_average) 
-#   binshift = bm.delay(freq[-1], freq[0], 1, t_res/1000)
-#   dm_step = 1/float(binshift)
-#   dm_search = np.arange(dm_range[dm_bin] - 100*dm_step,dm_range[dm_bin] + 100*dm_step ,dm_step)
-#   Find the dm that maximises SNR from 1st search    
-    best_dm1 = dm_range[dm_bin]
-#   A finer search around this dm
-    if args.scatter:
-        new_dm_search = np.linspace(best_dm1-0.5*best_dm1, best_dm1+0.5*best_dm1, 200)
-    else:
-        new_dm_search = np.linspace(-best_dm1, best_dm1, 200)
-#   dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[min(dm_bin + 1,19)], 200) # search for the range to try
-    dm_range_2 = new_dm_search # set a new range
-#   dm_range = np.linspace(-.025, .025, 200)
-#   Plot the region we search for best dm
-    if args.getPlot:
-        # Create a snr vs dm plot for visualization
-        snrfig1 = plt.figure()
-        plt.plot(dm_range, peaks_of_average, '.')
-        plt.axvline(x=best_dm1, color='r', ymax=np.max(peaks_of_average))
-#        plt.fill_betweenx(peaks_of_average, x1=-best_dm1, x2=best_dm1, color='grey', alpha='0.5')
-        plt.title('Best dm trial')
-        plt.xlabel('delta dm (pc cm^-3)')
-        plt.ylabel('SNR')
-        if args.doHC:
-            snrfig1.savefig('SNR_DM_HC_seed_%d_1.png' %(iseed))
-            snrfig1.clear()
-            plt.close(snrfig1)
+#       find the bin where the SNR-DM curve peak (best DM from the 1st iteration)
+        dm_bin = bm.find_phase_bin(peaks_of_average) 
+#       binshift = bm.delay(freq[-1], freq[0], 1, t_res/1000)
+#       dm_step = 1/float(binshift)
+#       dm_search = np.arange(dm_range[dm_bin] - 100*dm_step,dm_range[dm_bin] + 100*dm_step ,dm_step)
+#       Find the dm that maximises SNR from 1st search    
+        best_dm1 = dm_range[dm_bin]
+#       A finer search around this dm
+        if args.scatter:
+            new_dm_search = np.linspace(-best_dm1, best_dm1, 200)
         else:
-            snrfig1.savefig('SNR_DM_KJ07_seed_%d_1.png' %(iseed))
-            snrfig1.clear()
-            plt.close(snrfig1)
+            new_dm_search = np.linspace(best_dm1-0.5*best_dm1, best_dm1+0.5*best_dm1, 200)
+#       dm_search = np.linspace(dm_range[dm_bin - 1], dm_range[min(dm_bin + 1,19)], 200) # search for the range to try
+        dm_range_2 = new_dm_search # set a new range
+#       dm_range = np.linspace(-.025, .025, 200)
+#       Plot the region we search for best dm
+        if args.getPlot:
+            # Create a snr vs dm plot for visualization
+            snrfig1 = plt.figure()
+            plt.plot(dm_range, peaks_of_average, '.')
+            plt.axvline(x=best_dm1, color='r', ymax=np.max(peaks_of_average))
+#        plt.fill_betweenx(peaks_of_average, x1=-best_dm1, x2=best_dm1, color='grey', alpha='0.5')
+            plt.title('Best dm trial', fontsize=18)
+            plt.xticks(fontsize=18)
+            plt.yticks(fontsize=18)
+            plt.xlabel('Delta dm (pc cm^-3)', fontsize=18)
+            plt.ylabel('Average profile peak', fontsize=18)
+            if args.doHC:
+                snrfig1.savefig('SNR_DM_HC_seed_%d_1.png' %(iseed))
+                snrfig1.clear()
+                plt.close(snrfig1)
+            else:
+                snrfig1.savefig('SNR_DM_KJ07_seed_%d_1.png' %(iseed))
+                snrfig1.clear()
+                plt.close(snrfig1)
 
 #----------------- SECOND ITERATION ----------------------------
-# Search for a best dm
-    peaks_of_average = []
-    for dm_id in range(len(dm_range_2)):
-        shifted_profiles = []
-        for freq_id in range(nch):
-            bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range_2[dm_id], t_res/1000.) # Res increased by 1000 more bins
-            shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
-        average = bm.avg_prof(shifted_profiles)
-        peaks_of_average.append(bm.find_peak(average))
-    
-#   Find the best dm (dm that maximises SNR)
-    for i in range(len(peaks_of_average)):
-        if peaks_of_average[i] == np.max(peaks_of_average):
-            best_dm = dm_range_2[i]
-    if args.getPlot:
+#       Search for a best dm
+        peaks_of_average = []
+        for dm_id in range(len(dm_range_2)):
+            shifted_profiles = []
+            for freq_id in range(nch):
+                bin_shift = bm.delay(freq[nch - 1], freq[freq_id], dm_range_2[dm_id], t_res/1000.) # Res increased by 1000 more bins
+                shifted_profiles.append(np.roll(resampled[freq_id], bin_shift))
+            average = bm.avg_prof(shifted_profiles)
+            peaks_of_average.append(bm.find_peak(average))
+        
+#       Find the best dm (dm that maximises SNR)
+        for i in range(len(peaks_of_average)):
+            if peaks_of_average[i] == np.max(peaks_of_average):
+                best_dm = dm_range_2[i]
+        if args.getPlot:
 #       Create a snr vs dm plot for visualization
-        snrfig2 = plt.figure()
-        plt.plot(dm_range_2, peaks_of_average, '.')
-        if best_dm:
-            plt.axvline(x=best_dm, color='r', ymax=np.max(peaks_of_average))
-            #plt.annotate('annotate', xy=(best_dm, peaks_of_average[i]), xytext=(np.min(peaks_of_average), 0.01),\
-            #arrowprops=dict(facecolor='black', shrink=0.05))
-        plt.title('Best dm trial')
-        plt.xlabel('delta dm (pc cm^-3)')
-        plt.ylabel('SNR')
-        if args.doHC:
-            snrfig2.savefig('SNR_DM_HC_seed_%d_bestDM_%.3f_2.png' %(iseed, best_dm))
-            snrfig2.clear()
-            plt.close(snrfig2)
-        else:
-            snrfig2.savefig('SNR_DM_KJ07_seed_%d_bestDm_%.3f_2.png' %(iseed, best_dm))
-            snrfig2.clear()
-            plt.close(snrfig2)
-    
+            snrfig2 = plt.figure()
+            plt.plot(dm_range_2, peaks_of_average, '.')
+            if best_dm:
+                plt.axvline(x=best_dm, color='r', ymax=np.max(peaks_of_average))
+                #plt.annotate('annotate', xy=(best_dm, peaks_of_average[i]), xytext=(np.min(peaks_of_average), 0.01),\
+                #arrowprops=dict(facecolor='black', shrink=0.05))
+            plt.title('Best dm trial', fontsize=18)
+            plt.xlabel('Delta dm (pc cm^-3)', fontsize=18)
+            plt.ylabel('Average profile peak', fontsize=18)
+            plt.yticks(fontsize=18)
+            plt.xticks(fontsize=18)
+            if args.doHC:
+                snrfig2.savefig('SNR_DM_HC_seed_%d_bestDM_%.3f_2.png' %(iseed, best_dm))
+                snrfig2.clear()
+                plt.close(snrfig2)
+            else:
+                snrfig2.savefig('SNR_DM_KJ07_seed_%d_bestDm_%.3f_2.png' %(iseed, best_dm))
+                snrfig2.clear()
+                plt.close(snrfig2)
+        
+        # Write out important parameters into a file    
+        if args.outfile:
+            if args.doHC:
+                model = 'Hollow_cone'
+            else:
+                model = 'Patchy_beam'
+            pulsarParams = np.asarray([model, min_freq, chbw, nch, P, alpha, beta, \
+                                      iseed, int(rand_dm), best_dm])
+            f = open('dm_dat.txt', 'a')
+            f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
+else:
+    template = profile[-1]
+    lag_time = bm.cross_correlate(profile, template, period=P)
+    dm_guess = (lag_time[-1] - lag_time[0]) / (4.148808 * 1e3 * ((freq[-1] * 1e3) ** (-2) - (freq[0] * 1e3)  ** (-2)))
+    delta_dm, pcov = curve_fit(bm.dispersive_delay, freq * 1e3, lag_time, p0=[dm_guess])
+    if args.diagnostic:
+        fig, ax = plt.subplots(1, 2, figsize=(16, 5))
+        ax[0].plot(lag_time, freq, '.', label='Delta t')
+        ax[0].plot(bm.dispersive_delay(freq * 1e3, delta_dm), freq, '--', label='fit')
+        ax[0].set_ylabel('Frequency (GHz)', fontsize=14)
+        ax[0].set_xlabel(r'$\delta_t$ (s)', fontsize=14)
+        ax[0].legend(fontsize=14)
+        ax[1].plot(lag_time - bm.dispersive_delay(freq * 1e3, delta_dm), '*', label='residual')
+        ax[1].legend()
+        fig.savefig('template_matching_%i.png' %iseed)
     # Write out important parameters into a file    
     if args.outfile:
         if args.doHC:
@@ -421,39 +473,48 @@ if all(i > 10 for i in SN):
         else:
             model = 'Patchy_beam'
         pulsarParams = np.asarray([model, min_freq, chbw, nch, P, alpha, beta, \
-                                  iseed, int(rand_dm), best_dm])
-        f = open('dm_dat.txt', 'a')
+        iseed, int(rand_dm), delta_dm[0]])
+        f = open('dm_dat_template_matching.txt', 'a')
         f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 
-#==================================================================
+
+#===========================================================================================================================
 #                     PRODUCE PLOTS:
-#==================================================================
+#===========================================================================================================================
 if args.getPlot:
 #===========================================
 # SET A ZERO BASELINE AND PLOT THE PROFILE:
 #===========================================
     fig2, ax2 = plt.subplots()
     for k in np.arange(len(profile)):
-        colormap = plt.cm.gist_ncar
         ax2.plot(phase, profile[k] + k, label='frequency = %0.2f GHz' %freq[k], color='grey')
-	plt.title('Profile evolution with frequency' )
-	plt.xlabel('Phase (degrees)')
-        plt.ylabel('Frequency (%.3f - %.3f MHz)' %(freq[0]*1e3, freq[-1]*1e3))
-        plt.xlim(-180,180)
+	plt.title('Profile evolution with frequency', fontsize=18)
+	plt.xlabel('Phase (degrees)', fontsize=18)
+        if not args.freqrange:
+            plt.ylabel('Frequency (%.1f - %.1f MHz)' %(freq[0]*1e3, freq[-1]*1e3), fontsize=18)
+        else:
+            if len(args.freqrange) > 1:
+                plt.ylabel('Frequency (%.1f - %.1f MHz)' %(args.freqrange[0], args.freqrange[-1]), fontsize=18)
+            else:
+                plt.ylabel('Frequency (%s MHz)' %(args.freqrange[0]), fontsize=18)
+        plt.xticks(fontsize=18) 
+        plt.yticks(fontsize=18) 
+        plt.xlim(-180, 180)
         plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
-        plt.grid('on', which='both')
+#        plt.grid('on', which='both')
         #============================================
         #    2D emission region:
         #============================================
         xlos, ylos, thetalos = bm.los(alpha, beta, res)
-        fig3 = plt.figure(figsize=(10,5))
+        fig3 = plt.figure(figsize=(14,6))
         ax31 = fig3.add_subplot(1,2,1)
-        plt.plot(xlos, ylos, '+r')
-        plt.imshow(beam[k].T, extent=[-180, 180, 180, -180])
-        plt.xlabel('X (degrees)')
-        plt.title('Beam')
-        plt.ylabel('Y (degrees)')
-        # find zoomed extent for plot
+        plt.plot(xlos, ylos, '-C0', lw=2)
+        plt.imshow(beam[k].T, extent=[-180, 180, 180, -180], cmap='gist_heat')
+        plt.xlabel('X (degrees)', fontsize=18)
+        #plt.title('Beam', fontsize=18)
+        plt.ylabel('Y (degrees)', fontsize=18)
+        plt.tick_params(axis='both', which='major', labelsize=18)
+        # find zoomed extent fior plot
         nonZero = np.where(beam[0]!= 0.0)    # Set the maximum zoom to beam at lowest frequency
         nzx_min = np.min(np.amin(nonZero,0))
         nzy_min = np.min(np.amin(nonZero,1))
@@ -463,25 +524,34 @@ if args.getPlot:
         x2 = phase[nzx_max]
         y1 = phase[nzy_min]
         y2 = phase[nzy_max]
-        plt.xlim(x1,x2)
-        plt.ylim(y1,y2)
-        plt.colorbar()
+        plt.xlim(-20,20)
+        plt.ylim(-20,20)
+#        plt.xlim(x1,x2)
+#        plt.ylim(y1,y2)
+        cb = plt.colorbar()
+        #cb.set_label('Intensity', labelpad=-40, y=0.45)
+        cb.set_label('Intensity', size=18)
+        cb.ax.tick_params(labelsize=18) 
         # 1D plot
         ax32 = fig3.add_subplot(1,2,2)
-        plt.plot(phase, profile[0], color='blue', label='Scattered')
+        #plt.tight_layout()
+        plt.plot(phase, profile[0], color='grey', label='Scattered')
         # For comparision, overplot a non scattered profile with added noise
         if args.scatter:
             if args.snr:
                 prof_noise = bm.add_noise(prof[0], rms, res)
-                plt.plot(phase, prof_noise, color='grey', alpha=0.5, label='Intrinsic')
+                plt.plot(phase, prof_noise, color='C0', alpha=0.5, label='Intrinsic')
             else:
-                plt.plot(phase, prof[0], color='grey', alpha=0.5, label='Intrinsic')
+                plt.plot(phase, prof[0], color='C0', alpha=0.5, label='Intrinsic')
             plt.legend()
-        plt.title('Profile at %.3f GHz' % freq[0])
-        plt.ylim(np.min(profile), np.max(profile))
+        plt.title('Profile at %.3f GHz' % freq[0], fontsize=18)
+        plt.ylim(0,10)
         plt.xlim(-180, 180)
-        plt.xlabel('Phase ')
-        plt.ylabel('Intensity')
+        plt.xlabel('Phase ', fontsize=18)
+        plt.tight_layout()
+        #plt.ylabel('Intensity', fontsize=18)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
         if args.doHC:
             suffix = 'HC'
         else:
@@ -501,11 +571,16 @@ if args.getPlot:
             xlos, ylos, thetalos = bm.los(alpha, beta, res)
             fig4 = plt.figure(figsize=(10,5))
             ax41 = fig4.add_subplot(1,2,1)
+            plt.tight_layout()
+            plt.tick_params(axis='both', which='major', labelsize=18)
             plt.plot(xlos, ylos, '+r')
             plt.imshow(beam[bid].T, extent=[-180, 180, 180, -180])
-            plt.xlabel('X (degrees)')
-            plt.title('Radio pulsar beam')
-            plt.ylabel('Y (degrees)')
+            plt.xlabel('X (degrees)', fontsize=18)
+            plt.title('Radio pulsar beam', fontsize=18)
+            plt.ylabel('Y (degrees)', fontsize=18)
+            #plt.xticks(fontsize=18)
+            #plt.yticks(fontsize=18)
+            #plt.tick_params(axis='y', which='both', left='off', top='off', labelleft='off')
             # find zoomed extent for plot
             nonZero = np.where(beam[0]!= 0.0)     # set the maximum zoom to beam at lowest frequency
             nzx_min = np.min(np.amin(nonZero,0))
@@ -517,8 +592,11 @@ if args.getPlot:
             y1 = phase[nzy_min]
             y2 = phase[nzy_max]
             plt.xlim(x1,x2)
-            plt.ylim(y1,y2)
-            plt.colorbar()
+            plt.ylim(y1,y2)        
+            cb = plt.colorbar()
+            #cb.set_label('Intensity', labelpad=-40, y=0.45)
+            #cb.set_label('Intensity', size=18)
+            cb.ax.tick_params(labelsize=18)
             # 1D profile plot
             ax42 = fig4.add_subplot(1,2,2)
             plt.plot(phase, profile[bid], label='Scattered')
@@ -530,11 +608,13 @@ if args.getPlot:
                 else:
                     plt.plot(phase, prof[bid], color='grey', alpha=0.5, label='Intrinsic')
                 plt.legend()
-            plt.title('Profile at %.3f GHz' % freq[bid])
+            plt.title('Profile at %.3f GHz' % freq[bid], fontsize=18)
             plt.xlim(-180, 180)
             plt.ylim(np.min(profile), np.max(profile))
-            plt.xlabel('Phase ')
-            plt.ylabel('Intensity')
+            plt.xlabel('Phase ', fontsize=18)
+            plt.ylabel('Intensity', fontsize=18)
+            plt.xticks(fontsize=18)
+            plt.yticks(fontsize=18)
             if args.doHC:
                 suffix = 'HC'
             else:

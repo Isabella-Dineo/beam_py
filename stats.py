@@ -22,6 +22,7 @@ parser.add_argument('-model', default='patchy', type=str, help='Model used for t
 parser.add_argument('-fcen', type=float, help='Centre frequency (GHz).')
 parser.add_argument('-outfile', type=str, help='png file name title.')
 parser.add_argument('--fit', action='store_true', help='option to fit for a bimodal distribution')
+parser.add_argument('-plotxlim', nargs='+', type=float, default=None, help='xlim for the plot (xmin and xmax)')
 args = parser.parse_args()
 
 
@@ -42,18 +43,24 @@ for fid in range(len(files)):
     f.write(' '.join([str(item) for item in mean_var]) + ' \n')
     # Plot a dm distribution
     fig = plt.figure(figsize=(10, 10))
-    x,y,_=plt.hist(dat, bins=100)
+    x,y,_=plt.hist(dat, bins=50)
     plt.yscale('log', nonposy='clip')
-    plt.title('$\Delta$DM distribution: ' + str(args.o) + ' band', fontsize=20)
-    plt.xlim(-0.06, 0.06)
+    plt.title(str(args.o) , fontsize=22)
+    #plt.title('Scattering DM distribution: ' + str(args.o) + ' band', fontsize=22)
+    #plt.title(r'$\alpha$' + str(args.o), fontsize=22)
+    #plt.xlim(-0.75, 0.75)
+    if args.plotxlim:
+        plt.xlim(args.plotxlim[0], args.plotxlim[1])
     #if abs(np.max(dat)) > abs(np.min(dat)):
     #    plt.xlim(-np.max(dat), np.max(dat))
     #elif abs(np.max(dat)) < abs(np.min(dat)):
     #    plt.xlim(-abs(np.min(dat)), abs(np.min(dat)))
-    plt.ylabel('log(samples)', fontsize=18)
-    plt.xlabel(r'$\Delta$DM (pc cm$^{-3}$)', fontsize=18)
-    plt.ylabel('log(samples)')
-    plt.tick_params(axis='both', which='major', labelsize=10)
+    plt.tight_layout()
+    plt.xlabel(r'$\Delta$DM (pc cm$^{-3}$)', fontsize=22)
+    #plt.xlabel(r'Scattering DM (pc cm$^{-3}$)', fontsize=22)
+    #plt.xlabel(r'$\alpha$ (degrees)', fontsize=22)
+    plt.ylabel('log(samples)', fontsize=22)
+    plt.tick_params(axis='both', which='major', labelsize=22)
     #plt.tick_params(axis='both', which='minor', labelsize=8)
  
     # Fitting a bimodal distribution:

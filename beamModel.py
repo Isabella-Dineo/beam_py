@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-
 # A module containing function used to generate pulsar beam and profile.
 
 import numpy as np
 from scipy import constants
 import scipy.stats as stats
+from scipy.signal import correlate
+from scipy.signal import resample
 
 #====================================================================================================================================================
 #                                                       PRECISION ERRORS                
@@ -675,7 +676,6 @@ def find_delta_t( width, P):
        delta_t   : time delay to shift aprofiles accros given width
        
     """
-#   ============ FIND A DM THAT WOULD SMEAR THE PROFILES ACROSS THE EXPECTED PROFILE WIDTH ==========   
     delta_t = width/360.0 * P  
     return delta_t
 
@@ -721,3 +721,44 @@ def avg_prof(prof):
 
     return averageP
 
+# ===========================================================================================================================================
+#                                           TEMPLATE  MATCHING  METHOD 
+# ===========================================================================================================================================
+# Cross correlate 
+def cross_correlate(profiles, template, period, resample_factor=100):
+    """Template matching function. Cross-correlate profiles with a template,
+    and determine the lag (is seconds).
+    Input:
+        profiles:          profiles in the channels
+        template:          template to use for cross-correlation
+        period:            pulse period (s)
+        resample_factor:   factor to use fp resampling the correlation functions
+    """
+    resolution = len(profiles[0])
+    time_resolution = period/float(resolution)
+    delay = np.zeros(np.shape(profiles)[0])
+    for i in range(np.shape(profiles)[0]):
+        correlation_coefficients = correlate(template, profiles[i])
+        resampled_coeffiecients = resample(correlation_coefficients, resample_factor \
+                                                        * len(correlation_coefficients))
+        lag = np.argmax(resampled_coeffiecients) / float(resample_factor)
+        lag = np.mod(lag, resolution) + 1.0 # scipy correlate return N + 1 points
+        # Restrict the lag from shifting profiles across full period
+        if lag > len(template)/2.:
+            lag = len(template) - lag
+        else:
+            lag = -lag
+        delay[i] = time_resolution * lag
+    return delay
+
+
+def dispersive_delay(frequencies, DM):
+    """Function to determine a dispersive delay within a band, given a DM.
+       Input:
+           frequencies:        channel frequencies (MHz)
+           DM:                 dispersion measure (pc cm^-3)
+    """
+    K = 4.148808 * 1e3 # MHz^2 pc^-1 cm^3 s
+    fi = frequencies[-1] # Assuming last freq is the highest frequency (set as reference)
+    time_delay = K * ( frequencies ** (-2) - fi ** (-2) ) * DM
+    return time_delay
