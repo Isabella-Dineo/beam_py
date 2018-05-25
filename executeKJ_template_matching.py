@@ -31,7 +31,6 @@ for i in range(iterations):
         iseed = int(time.time())
     else:
         iseed = args.iseed
-    np.random.seed(iseed) 
     if P == None:
         P = np.random.uniform(0.1, 2)
   
