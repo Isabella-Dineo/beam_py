@@ -752,13 +752,14 @@ def cross_correlate(profiles, template, period, resample_factor=100):
     return delay
 
 
-def dispersive_delay(frequencies, DM):
+def dispersive_delay(frequencies, DM, C):
     """Function to determine a dispersive delay within a band, given a DM.
        Input:
            frequencies:        channel frequencies (MHz)
            DM:                 dispersion measure (pc cm^-3)
+           C:                  some constant that shifts the function along x-axis
     """
     K = 4.148808 * 1e3 # MHz^2 pc^-1 cm^3 s
     fi = frequencies[-1] # Assuming last freq is the highest frequency (set as reference)
-    time_delay = K * ( frequencies ** (-2) - fi ** (-2) ) * DM
+    time_delay = K * ( frequencies ** (-2) - fi ** (-2) ) * DM + C
     return time_delay
