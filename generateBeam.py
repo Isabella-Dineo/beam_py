@@ -156,7 +156,8 @@ parser.add_argument('--doHC', action="store_true", help='Hollow Cone beam - defa
 parser.add_argument('--getPlot', action="store_true", help='Option plot and save the beam / profiles')
 parser.add_argument('--showrfm', action="store_true", help='Option to produce rfm .gif image')
 parser.add_argument('--diagnostic', action="store_true", help='Option to show diagnostic plots')
-parser.add_argument('--randombeta', action="store_true", help='Option to chose a random beta')
+parser.add_argument('--random_beta', action="store_true", help='Option to chose a random beta')
+parser.add_argument('--random_alpha', action="store_true", help='Option to chose a random alpha')
 parser.add_argument('--template_matching', action="store_true", help='Option to use template matching method for delta dm search. S/N maximization method default.')
 args = parser.parse_args()
 P = args.p
@@ -165,7 +166,7 @@ npatch = args.npatch
 # iseed = args.iseed
 hmin = args.hmin
 hmax = args.hmax
-alpha = args.alpha
+#alpha = args.alpha
 snr = args.snr
 do_ab = args.do_ab
 nch = args.nch
@@ -208,7 +209,7 @@ for i in np.arange(len(freq)):
 #      2. Get profile at each frequency:
 # ========================================
 # ------- Get the impact parameter -------
-if args.randombeta:
+if args.random_beta:
     # Largest opening angle at lowest frequency:
     h = np.max(emission_heights)
     opening_angle = bm.rho(P, h)
@@ -216,6 +217,11 @@ if args.randombeta:
     beta = np.random.uniform(-np.max(opening_angle), np.max(opening_angle))
 else:
     beta = args.beta
+if args.random_alpha:
+    alpha = np.rad2deg(np.arccos(np.random.uniform()))
+else:
+    alpha = args.alpha
+
 # -------- Get the beam & profile --------
 for i in range(nch):
     pr, Z, W = generateBeam(P, alpha, beta, freq[i], emission_heights[i], npatch, snr, do_ab, iseed, fanBeam, hollowCone)
@@ -456,6 +462,7 @@ else:
     lag_time = bm.cross_correlate(profile, template, period=P)
     dm_guess = (lag_time[-1] - lag_time[0]) / (4.148808 * 1e3 * ((freq[-1] * 1e3) ** (-2) - (freq[0] * 1e3)  ** (-2)))
     delta_dm, pcov = curve_fit(bm.dispersive_delay, freq * 1e3, lag_time, p0=[dm_guess])
+    residual = lag_time - bm.dispersive_delay(freq * 1e3, delta_dm)
     if args.diagnostic:
         fig, ax = plt.subplots(1, 2, figsize=(16, 5))
         ax[0].plot(lag_time, freq, '.', label='Delta t')
@@ -463,7 +470,7 @@ else:
         ax[0].set_ylabel('Frequency (GHz)', fontsize=14)
         ax[0].set_xlabel(r'$\delta_t$ (s)', fontsize=14)
         ax[0].legend(fontsize=14)
-        ax[1].plot(lag_time - bm.dispersive_delay(freq * 1e3, delta_dm), '*', label='residual')
+        ax[1].plot(residual, '*', label='residual')
         ax[1].legend()
         fig.savefig('template_matching_%i.png' %iseed)
     # Write out important parameters into a file    
@@ -476,7 +483,6 @@ else:
         iseed, int(rand_dm), delta_dm[0]])
         f = open('dm_dat_template_matching.txt', 'a')
         f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
-
 
 #===========================================================================================================================
 #                     PRODUCE PLOTS:
@@ -508,7 +514,7 @@ if args.getPlot:
         xlos, ylos, thetalos = bm.los(alpha, beta, res)
         fig3 = plt.figure(figsize=(14,6))
         ax31 = fig3.add_subplot(1,2,1)
-        plt.plot(xlos, ylos, '-C0', lw=2)
+        plt.plot(xlos, ylos, '-', lw=2)
         plt.imshow(beam[k].T, extent=[-180, 180, 180, -180], cmap='gist_heat')
         plt.xlabel('X (degrees)', fontsize=18)
         #plt.title('Beam', fontsize=18)
@@ -540,9 +546,9 @@ if args.getPlot:
         if args.scatter:
             if args.snr:
                 prof_noise = bm.add_noise(prof[0], rms, res)
-                plt.plot(phase, prof_noise, color='C0', alpha=0.5, label='Intrinsic')
+                plt.plot(phase, prof_noise, alpha=0.5, label='Intrinsic')
             else:
-                plt.plot(phase, prof[0], color='C0', alpha=0.5, label='Intrinsic')
+                plt.plot(phase, prof[0], alpha=0.5, label='Intrinsic')
             plt.legend()
         plt.title('Profile at %.3f GHz' % freq[0], fontsize=18)
         plt.ylim(0,10)
