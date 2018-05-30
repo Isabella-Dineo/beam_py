@@ -23,13 +23,12 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
        alpha      : inclination angle (degrees)
        beta       : impact parameter (degrees)
        heights    : emission heights (in km)
-       centerx    : the patch center projection on the x-axis 
-       centery    : the patch center projection on the y-axis
        snr        : signal to noise ratio       
        iseed      : seed for the random number generator
        do_ab      : option to include abberration effects
        fanBeam    : option to use fan beam model 
        hollowCone : option to use hollow cone model
+       iseed      : seed for random number generator
 
        Returns:
        --------
@@ -59,7 +58,7 @@ def generateBeam(P, alpha, beta, freq, heights, npatch, snr, do_ab, iseed, fanBe
     maxheight = np.max(heights)
 #   find opening angle for maximum height
     opa_max = bm.rho(P, maxheight)
-#   find profile width using Gil formula (eq 3.26)
+#   find the observed pulse/beam width using Gil formula (eq 3.26) [assumes a fully illuminated beam!]
     sin2W4 = (np.sin(np.deg2rad(opa_max))**2-np.sin(np.deg2rad(beta/2.0))**2)/ (np.sin(np.deg2rad(alpha))*np.sin(np.deg2rad(alpha+beta)))
     W = 4. * np.rad2deg(np.arcsin(np.sqrt(abs(sin2W4))))
 #   An arbitrary peak of the profile:
@@ -276,9 +275,23 @@ if args.disperse:
         sys.exit(1)
 else:
     dispersed_profile = sc_prof
+
+
+#====================================================================
+#           Determine the profile widths of the noiseless profile
+#====================================================================
+peaks = np.max(sc_prof, axis=1)
+w10_noiseless = np.zeros_like(peaks)
+for i, peak in enumerate(peaks):
+    w10_phase_initial = phase[np.where(sc_prof[i] > peak/10)][0]
+    w10_phase_final = phase[np.where(sc_prof[i] > peak/10)][-1]
+    w10_phase = w10_phase_final - w10_phase_initial
+    w10_noiseless[i] = w10_phase/360. * P # w10 in seconds
 #===========================================
 #     4. Add noise:
-#===========================================
+#===========================================i
+
+
 # Find amplitudes of the profiles.
 #peaks = []
 #for j in np.arange(len(prof)):
@@ -460,18 +473,27 @@ if not args.template_matching:
 else:
     template = profile[-1]
     lag_time = bm.cross_correlate(profile, template, period=P)
+    if snr:
+        sigma_lag = w10_noiseless/float(snr)
+    else:
+        sigma_lag = w10_noiseless
     dm_guess = (lag_time[-1] - lag_time[0]) / (4.148808 * 1e3 * ((freq[-1] * 1e3) ** (-2) - (freq[0] * 1e3)  ** (-2)))
-    delta_dm, pcov = curve_fit(bm.dispersive_delay, freq * 1e3, lag_time, p0=[dm_guess])
-    residual = lag_time - bm.dispersive_delay(freq * 1e3, delta_dm)
+    C_guess = 0.0 # Initial constant to shift the time delay across the x-axis
+    popt, pcov = curve_fit(bm.dispersive_delay, freq * 1e3, lag_time, p0=[dm_guess, C_guess], sigma=sigma_lag)
+    residual = lag_time - bm.dispersive_delay(freq * 1e3, popt[0], popt[1])
     if args.diagnostic:
         fig, ax = plt.subplots(1, 2, figsize=(16, 5))
         ax[0].plot(lag_time, freq, '.', label='Delta t')
-        ax[0].plot(bm.dispersive_delay(freq * 1e3, delta_dm), freq, '--', label='fit')
+        ax[0].plot(bm.dispersive_delay(freq * 1e3, popt[0], popt[1]), freq, '--', label='fit')
         ax[0].set_ylabel('Frequency (GHz)', fontsize=14)
         ax[0].set_xlabel(r'$\delta_t$ (s)', fontsize=14)
         ax[0].legend(fontsize=14)
         ax[1].plot(residual, '*', label='residual')
+        #ax[1].errorbar(lag_time, freq, xerr=sigma_lag, ls='--', label=r'$\sigma_{TOA}$')
         ax[1].legend()
+        ax[1].set_ylabel('Frequency (GHz)', fontsize=14)
+        ax[1].set_xlabel(r'$\delta_t$ (s)', fontsize=14)
+
         fig.savefig('template_matching_%i.png' %iseed)
     # Write out important parameters into a file    
     if args.outfile:
@@ -480,10 +502,10 @@ else:
         else:
             model = 'Patchy_beam'
         pulsarParams = np.asarray([model, min_freq, chbw, nch, P, alpha, beta, \
-        iseed, int(rand_dm), delta_dm[0]])
+        iseed, int(rand_dm), popt[0]])
         f = open('dm_dat_template_matching.txt', 'a')
         f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
-
+        print lag_time, sigma_lag
 #===========================================================================================================================
 #                     PRODUCE PLOTS:
 #===========================================================================================================================
