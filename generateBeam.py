@@ -262,20 +262,19 @@ else:
 #==========================================
 #    Disperse the signal
 #==========================================
-if args.disperse:
-    dispersed_profile = []
-    if args.dm:
-        for fid in range(len(freq)):
-            # Delay profiles using high freq profile as reference
-            bin_delay = bm.delay(freq[-1], freq[fid], args.dm, t_res)
-            print bin_delay
-            dispersed_profile.append(np.roll(sc_prof[fid], bin_delay))
-    else:
-        print 'Give a DM to disperse the profiles!'
-        sys.exit(1)
-else:
-    dispersed_profile = sc_prof
-
+#if args.disperse:
+#    dispersed_profile = []
+#    if args.dm:
+#        for fid in range(len(freq)):
+#            # Delay profiles using high freq profile as reference
+#            bin_delay = bm.delay(freq[-1], freq[fid], args.dm, t_res)
+#            dispersed_profile.append(np.roll(sc_prof[fid], bin_delay))
+#    else:
+#        print 'Give a DM to disperse the profiles!'
+#        sys.exit(1)
+#else:
+#    dispersed_profile = sc_prof
+#
 
 #====================================================================
 #           Determine the profile widths of the noiseless profile
@@ -471,7 +470,7 @@ if not args.template_matching:
             f = open('dm_dat.txt', 'a')
             f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
 else:
-    template = profile[-1]
+    template = sc_prof[-1]
     lag_time = bm.cross_correlate(profile, template, period=P)
     if snr:
         sigma_lag = w10_noiseless/float(snr)
@@ -505,7 +504,6 @@ else:
         iseed, int(rand_dm), popt[0]])
         f = open('dm_dat_template_matching.txt', 'a')
         f.write(' '.join([str(item) for item in pulsarParams]) + ' \n')
-        print lag_time, sigma_lag
 #===========================================================================================================================
 #                     PRODUCE PLOTS:
 #===========================================================================================================================

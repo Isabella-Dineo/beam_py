@@ -23,13 +23,9 @@ for i in range(iterations):
     npatch = 4 
     alpha = np.rad2deg(np.arccos(np.random.uniform()))
     iseed = time.time()
-    print iseed
     os.system('generateBeam.py -alpha %f -p %f -min_freq %f -chbw %f -nch %d -nc %d -npatch %d \
-            -snr %f -iseed %d --outfile --diagnostic --random_beta --template_matching --getPlot'\
+               -snr %f -iseed %d --outfile --diagnostic --random_beta --template_matching --getPlot'\
                % (alpha, P, fmin, bw, nch, nc, npatch, snr, iseed))
-    command = 'generateBeam.py -alpha %f -p %f -min_freq %f -chbw %f -nch %d -nc %d -npatch %d \
-            -snr %f -iseed %d --outfile --diagnostic --random_beta --template_matching --getPlot'\
-               % (alpha, P, fmin, bw, nch, nc, npatch, snr, iseed)
-    print command
+    command = 'generateBeam.py -alpha %f -p %f -min_freq %f -chbw %f -nch %d -nc %d -npatch %d -snr %f -iseed %d --outfile --diagnostic --random_beta --template_matching --getPlot' % (alpha, P, fmin, bw, nch, nc, npatch, snr, iseed)
     f = open('executed_commands.txt', 'a')
     f.write(' '.join([str(command)]) + ' \n')
